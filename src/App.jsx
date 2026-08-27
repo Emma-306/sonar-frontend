@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import OnboardingPage from "./pages/OnboardingPage";
 import PlanComparison from "./pages/PlanComparison";
 import Reading from "./pages/Reading";
+import AccountSettings  from "./pages/AccountSettings";
 
 const App = () => {
   return (
@@ -16,6 +17,7 @@ const App = () => {
 
         {/* Onboarding */}
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/settings" element={<AccountSettings />} />
         <Route path="/plan-comparison" element={<PlanComparison />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
