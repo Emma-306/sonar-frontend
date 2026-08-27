@@ -1,16 +1,284 @@
+import { useEffect, useRef } from "react";
 import { assets } from "../assets/assets.js";
 import { useNavigate } from "react-router-dom";
+import useAuthStore from "../stores/authStore.js";
 
 const Login = () => {
   const navigate = useNavigate();
 
+  const googleLogin = useAuthStore(
+    (state) => state.googleLogin
+  );
+
+  const isLoading = useAuthStore(
+    (state) => state.isLoading
+  );
+
+  const error = useAuthStore(
+    (state) => state.error
+  );
+
+  const googleClientRef = useRef(null);
+
+  // =====================================================
+  // LOAD GOOGLE IDENTITY SERVICES
+  // =====================================================
+
+  useEffect(() => {
+    const clientId =
+      import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      console.error(
+        "VITE_GOOGLE_CLIENT_ID is missing from frontend .env"
+      );
+      return;
+    }
+
+    const initializeGoogle = () => {
+      if (!window.google) {
+        console.error(
+          "Google Identity Services has not loaded."
+        );
+        return;
+      }
+
+      if (googleClientRef.current) {
+        return;
+      }
+
+      console.log(
+        "Initializing Google OAuth..."
+      );
+
+      // =================================================
+      // CREATE GOOGLE AUTHORIZATION CODE CLIENT
+      // =================================================
+
+      const client =
+        window.google.accounts.oauth2.initCodeClient({
+          client_id: clientId,
+
+          scope: "openid email profile",
+
+          ux_mode: "popup",
+
+          select_account: true,
+
+          include_granted_scopes: true,
+
+          callback: async (response) => {
+            try {
+              console.log(
+                "Google authorization response:",
+                response
+              );
+
+              // =========================================
+              // GOOGLE RETURNED AN ERROR
+              // =========================================
+
+              if (response?.error) {
+                console.error(
+                  "Google authentication error:",
+                  response
+                );
+
+                return;
+              }
+
+              // =========================================
+              // GET AUTHORIZATION CODE
+              // =========================================
+
+              const code = response?.code;
+
+              if (!code) {
+                console.error(
+                  "Google authorization code was not provided."
+                );
+
+                return;
+              }
+
+              console.log(
+                "Google authorization code received."
+              );
+
+              // =========================================
+              // SEND CODE TO BACKEND
+              // =========================================
+
+              const result =
+                await googleLogin(code);
+
+              console.log(
+                "Backend Google login result:",
+                result
+              );
+
+              // =========================================
+              // BACKEND LOGIN FAILED
+              // =========================================
+
+              if (!result?.success) {
+                console.error(
+                  "Backend Google login failed:",
+                  result?.message
+                );
+
+                return;
+              }
+
+              // =========================================
+              // LOGIN SUCCESSFUL
+              // =========================================
+
+              console.log(
+                "Google login successful:",
+                result.user
+              );
+
+              // =========================================
+              // CHECK ONBOARDING
+              // =========================================
+
+              if (
+                result.user?.onboardingCompleted
+              ) {
+                navigate("/dashboard");
+              } else {
+                navigate("/onboarding");
+              }
+            } catch (error) {
+              console.error(
+                "Google login failed:",
+                error
+              );
+            }
+          },
+
+          // =========================================
+          // GOOGLE POPUP ERROR
+          // =========================================
+
+          error_callback: (error) => {
+            console.error(
+              "Google popup error:",
+              error
+            );
+          },
+        });
+
+      googleClientRef.current = client;
+
+      console.log(
+        "Google OAuth initialized successfully."
+      );
+    };
+
+    // =====================================================
+    // GOOGLE SCRIPT ALREADY AVAILABLE
+    // =====================================================
+
+    if (window.google) {
+      initializeGoogle();
+      return;
+    }
+
+    // =====================================================
+    // CHECK IF SCRIPT ALREADY EXISTS
+    // =====================================================
+
+    let script = document.getElementById(
+      "google-gsi-script"
+    );
+
+    if (script) {
+      script.addEventListener(
+        "load",
+        initializeGoogle
+      );
+
+      return;
+    }
+
+    // =====================================================
+    // LOAD GOOGLE SCRIPT
+    // =====================================================
+
+    script = document.createElement("script");
+
+    script.id = "google-gsi-script";
+
+    script.src =
+      "https://accounts.google.com/gsi/client";
+
+    script.async = true;
+    script.defer = true;
+
+    script.onload = initializeGoogle;
+
+    script.onerror = () => {
+      console.error(
+        "Failed to load Google Identity Services."
+      );
+    };
+
+    document.head.appendChild(script);
+  }, [googleLogin, navigate]);
+
+  // =====================================================
+  // CUSTOM GOOGLE BUTTON
+  // =====================================================
+
   const handleGoogleLogin = () => {
-    navigate("/onboarding");
+    if (isLoading) {
+      return;
+    }
+
+    // =================================================
+    // GOOGLE NOT LOADED
+    // =================================================
+
+    if (!window.google) {
+      console.error(
+        "Google Identity Services has not loaded yet."
+      );
+
+      return;
+    }
+
+    // =================================================
+    // GOOGLE CLIENT NOT INITIALIZED
+    // =================================================
+
+    if (!googleClientRef.current) {
+      console.error(
+        "Google OAuth client has not been initialized yet."
+      );
+
+      return;
+    }
+
+    console.log(
+      "Opening Google authentication..."
+    );
+
+    // =================================================
+    // REQUEST AUTHORIZATION CODE
+    // =================================================
+
+    googleClientRef.current.requestCode();
   };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black">
-      {/* ================= VIDEO BACKGROUND ================= */}
+
+      {/* =================================================
+          VIDEO BACKGROUND
+      ================================================= */}
+
       <video
         autoPlay
         loop
@@ -18,16 +286,44 @@ const Login = () => {
         playsInline
         className="absolute inset-0 h-full w-full object-cover"
       >
-        <source src={assets.backgroundVideo} type="video/mp4" />
+        <source
+          src={assets.backgroundVideo}
+          type="video/mp4"
+        />
+
         Your browser does not support the video tag.
       </video>
 
-      {/* Dark Overlay */}
+      {/* =================================================
+          DARK OVERLAY
+      ================================================= */}
+
       <div className="absolute inset-0 bg-black/40" />
 
-      {/* ================= LOGIN CONTAINER ================= */}
-      <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
-        {/* ================= LOGIN CARD ================= */}
+      {/* =================================================
+          LOGIN CONTAINER
+      ================================================= */}
+
+      <div
+        className="
+          relative
+          z-10
+          flex
+          min-h-screen
+          w-full
+          items-center
+          justify-center
+          px-4
+          py-6
+          sm:px-6
+          sm:py-8
+        "
+      >
+
+        {/* =================================================
+            LOGIN CARD
+        ================================================= */}
+
         <div
           className="
             w-full
@@ -43,7 +339,11 @@ const Login = () => {
             md:py-10
           "
         >
-          {/* ================= LOGO ================= */}
+
+          {/* =================================================
+              LOGO
+          ================================================= */}
+
           <div className="mb-5 flex justify-center sm:mb-6">
             <div
               className="
@@ -82,7 +382,10 @@ const Login = () => {
             </div>
           </div>
 
-          {/* ================= HEADING ================= */}
+          {/* =================================================
+              HEADING
+          ================================================= */}
+
           <h1
             className="
               mb-2
@@ -97,7 +400,10 @@ const Login = () => {
             Welcome to Sonar
           </h1>
 
-          {/* ================= SUBTITLE ================= */}
+          {/* =================================================
+              SUBTITLE
+          ================================================= */}
+
           <p
             className="
               mx-auto
@@ -111,14 +417,18 @@ const Login = () => {
               sm:text-sm
             "
           >
-            Generate hyper-realistic speech from any text or document
-            instantly.
+            Generate hyper-realistic speech from
+            any text or document instantly.
           </p>
 
-          {/* ================= GOOGLE SIGN-IN ================= */}
+          {/* =================================================
+              CUSTOM GOOGLE BUTTON
+          ================================================= */}
+
           <button
             type="button"
             onClick={handleGoogleLogin}
+            disabled={isLoading}
             className="
               flex
               w-full
@@ -139,11 +449,15 @@ const Login = () => {
               focus:ring-black
               focus:ring-offset-2
               active:scale-[0.99]
+              disabled:cursor-not-allowed
+              disabled:opacity-60
               sm:gap-3
               sm:text-sm
             "
           >
-            {/* Google Logo */}
+
+            {/* GOOGLE LOGO */}
+
             <svg
               className="h-4 w-4 shrink-0 sm:h-5 sm:w-5"
               viewBox="0 0 24 24"
@@ -169,10 +483,27 @@ const Login = () => {
               />
             </svg>
 
-            <span>Sign in with Google</span>
+            <span>
+              {isLoading
+                ? "Signing in..."
+                : "Sign in with Google"}
+            </span>
           </button>
 
-          {/* ================= TERMS ================= */}
+          {/* =================================================
+              ERROR
+          ================================================= */}
+
+          {error && (
+            <p className="mt-3 text-center text-xs text-red-500">
+              {error}
+            </p>
+          )}
+
+          {/* =================================================
+              TERMS
+          ================================================= */}
+
           <p
             className="
               mt-5
@@ -187,13 +518,16 @@ const Login = () => {
             "
           >
             By continuing, you agree to our{" "}
+
             <a
               href="/terms"
               className="text-blue-600 hover:underline"
             >
               Terms Of Service
             </a>{" "}
+
             and{" "}
+
             <a
               href="/privacy"
               className="text-blue-600 hover:underline"
@@ -201,6 +535,7 @@ const Login = () => {
               Privacy Policy
             </a>
           </p>
+
         </div>
       </div>
     </div>
