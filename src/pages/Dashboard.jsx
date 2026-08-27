@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import SonarOrb from "../components/SonarOrb.jsx";
+import ThemeToggle from "../components/ThemeToggle";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
@@ -10,9 +11,7 @@ const Dashboard = () => {
   const [error, setError] = useState("");
 
   const handleBrowseClick = () => {
-    // Don't allow another file if one is already selected
     if (selectedFile) return;
-
     fileInputRef.current?.click();
   };
 
@@ -23,40 +22,38 @@ const Dashboard = () => {
 
     setError("");
 
-    // Check if file is a PDF
     if (file.type !== "application/pdf") {
       setError("Please select a PDF file.");
       event.target.value = "";
       return;
     }
 
-    // Check file size
     if (file.size > MAX_FILE_SIZE) {
       setError("File is too large. Please select a PDF smaller than 25MB.");
       event.target.value = "";
       return;
     }
 
-    // File passed validation
     setSelectedFile(file);
-
     console.log("Selected file:", file);
-    console.log("File size:", file.size, "bytes");
   };
 
-  // Delete selected PDF
   const handleDeleteFile = () => {
     setSelectedFile(null);
     setError("");
-
-    // Reset the input so the same file can be selected again
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   return (
-    <div className="flex min-h-full w-full flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-10 md:px-7 md:py-12">
+    <div className="relative flex min-h-full w-full flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-10 md:px-7 md:py-12">
+      
+      {/* Theme Toggle - Top Right */}
+      <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-5">
+        <ThemeToggle />
+      </div>
+
       {/* Sonar Orb */}
       <div className="mb-6 sm:mb-7 md:mb-8">
         <SonarOrb />
@@ -90,7 +87,7 @@ const Dashboard = () => {
           dark:text-gray-400
         "
       >
-        What would you like to do today?
+        What PDF would you like to listen to today?
       </p>
 
       {/* Upload area */}
@@ -256,7 +253,6 @@ const Dashboard = () => {
               dark:bg-[#151515]
             "
           >
-            {/* File information */}
             <div className="min-w-0 flex-1">
               <p
                 className="
@@ -285,7 +281,6 @@ const Dashboard = () => {
               </p>
             </div>
 
-            {/* Delete button */}
             <button
               type="button"
               onClick={handleDeleteFile}

@@ -5,7 +5,6 @@ import SonarOrb from "../components/SonarOrb";
 import Visualizer from "../components/Visualizer";
 import { assets } from "../assets/assets.js";
 
-
 // ============================================================
 // ACCENTS
 // ============================================================
@@ -27,7 +26,6 @@ const accents = [
     flag: "🇺🇸",
   },
 ];
-
 
 // ============================================================
 // BRAND COLORS
@@ -61,7 +59,6 @@ const brandColors = [
   },
 ];
 
-
 // ============================================================
 // ONBOARDING PAGE
 // ============================================================
@@ -74,10 +71,15 @@ const OnboardingPage = () => {
   // ==========================================================
 
   const [name, setName] = useState("");
-  const [voice, setVoice] = useState("male");
-  const [accent, setAccent] = useState("american");
-  const [brandColor, setBrandColor] = useState("purple");
 
+  // No voice selected by default
+  const [voice, setVoice] = useState(null);
+
+  // No accent selected by default
+  const [accent, setAccent] = useState(null);
+
+  // Purple is the default brand color
+  const [brandColor, setBrandColor] = useState("purple");
 
   // ==========================================================
   // ACTIVE BRAND COLOR
@@ -87,13 +89,21 @@ const OnboardingPage = () => {
     brandColors.find((color) => color.id === brandColor)?.color ||
     "#A855F7";
 
+  // ==========================================================
+  // FORM VALIDATION
+  // ==========================================================
+
+  const canContinue =
+    name.trim() !== "" &&
+    voice !== null &&
+    accent !== null;
 
   // ==========================================================
   // CONTINUE
   // ==========================================================
 
   const handleContinue = () => {
-    if (!name.trim()) return;
+    if (!canContinue) return;
 
     const preferences = {
       name: name.trim(),
@@ -108,14 +118,12 @@ const OnboardingPage = () => {
     navigate("/dashboard");
   };
 
-
   // ==========================================================
   // UI
   // ==========================================================
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden">
-
       {/* ======================================================
           BACKGROUND IMAGE
       ====================================================== */}
@@ -133,14 +141,11 @@ const OnboardingPage = () => {
         "
       />
 
-
       {/* ======================================================
           MAIN CONTENT
       ====================================================== */}
 
       <div className="relative z-10 flex min-h-screen w-full">
-
-
         {/* ====================================================
             LEFT SIDE
         ==================================================== */}
@@ -151,22 +156,25 @@ const OnboardingPage = () => {
             min-h-screen
             w-full
             flex-col
-            justify-center
+            justify-start
             px-4
-            py-10
+            pt-8
+            pb-10
 
             sm:px-6
+            sm:pt-10
 
             md:px-10
+            md:pt-12
 
             lg:w-[48%]
             lg:px-8
-            lg:py-12
+            lg:pt-10
 
             xl:px-12
+            xl:pt-12
           "
         >
-
           {/* ==================================================
               FORM CONTAINER
           ================================================== */}
@@ -185,32 +193,25 @@ const OnboardingPage = () => {
               xl:max-w-[420px]
             "
           >
-
-
             {/* =================================================
                 LOGO
             ================================================= */}
 
             <div
               className="
-                mb-8
+                mb-5
                 flex
                 items-center
                 gap-2
 
-                sm:mb-9
-
-                lg:mb-8
+                sm:mb-7
               "
             >
-
               {/* Logo icon */}
 
               <div
                 className="
                   flex
-                  h-7
-                  w-7
                   items-center
                   justify-center
                   rounded-full
@@ -218,11 +219,10 @@ const OnboardingPage = () => {
                   from-purple-500
                   to-violet-600
 
-                  sm:h-8
-                  sm:w-8
+                  h-9
+                  w-9
                 "
               >
-
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -230,11 +230,8 @@ const OnboardingPage = () => {
                   strokeWidth="2"
                   strokeLinecap="round"
                   className="
-                    h-3.5
-                    w-3.5
-
-                    sm:h-4
-                    sm:w-4
+                    h-6
+                    w-6
                   "
                 >
                   <path d="M2 10v4" />
@@ -244,33 +241,27 @@ const OnboardingPage = () => {
                   <path d="M18 5v14" />
                   <path d="M22 10v4" />
                 </svg>
-
               </div>
-
 
               {/* Logo text */}
 
               <span
                 className="
-                  text-[15px]
                   font-semibold
                   text-gray-900
 
-                  sm:text-[17px]
+                  sm:text-[19px]
                 "
               >
                 Sonar
               </span>
-
             </div>
-
 
             {/* =================================================
                 HEADING
             ================================================= */}
 
-            <div className="mb-8 sm:mb-9">
-
+            <div className="mb-6 sm:mb-7">
               <h1
                 className="
                   text-[28px]
@@ -287,7 +278,6 @@ const OnboardingPage = () => {
                 Preferences
               </h1>
 
-
               <p
                 className="
                   mt-1
@@ -299,16 +289,13 @@ const OnboardingPage = () => {
               >
                 Customize your experience
               </p>
-
             </div>
-
 
             {/* =================================================
                 NAME
             ================================================= */}
 
-            <div className="mb-7 sm:mb-8">
-
+            <div className="mb-6 sm:mb-7">
               <label
                 htmlFor="preferred-name"
                 className="
@@ -324,7 +311,6 @@ const OnboardingPage = () => {
                 What would you like to be called?
               </label>
 
-
               <input
                 id="preferred-name"
                 type="text"
@@ -334,7 +320,7 @@ const OnboardingPage = () => {
                 className="
                   h-10
                   w-full
-                  rounded-lg
+                  rounded-xl
                   border
                   border-gray-200
                   bg-white/80
@@ -347,25 +333,37 @@ const OnboardingPage = () => {
 
                   placeholder:text-gray-400
 
-                  focus:border-purple-400
-                  focus:ring-2
-                  focus:ring-purple-100
-
                   sm:h-11
                   sm:px-4
                   sm:text-[13px]
                 "
+                style={{
+                  borderColor: name ? activeColor : undefined,
+                  boxShadow: name
+                    ? `0 0 0 2px ${activeColor}20`
+                    : undefined,
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = activeColor;
+                  e.currentTarget.style.boxShadow = `0 0 0 2px ${activeColor}20`;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = name
+                    ? activeColor
+                    : "#e5e7eb";
+
+                  e.currentTarget.style.boxShadow = name
+                    ? `0 0 0 2px ${activeColor}20`
+                    : "none";
+                }}
               />
-
             </div>
-
 
             {/* =================================================
                 VOICE MODEL
             ================================================= */}
 
-            <div className="mb-7 sm:mb-8">
-
+            <div className="mb-6 sm:mb-7">
               <h2
                 className="
                   text-[13px]
@@ -380,7 +378,6 @@ const OnboardingPage = () => {
                 Choose your voice model
               </h2>
 
-
               <p
                 className="
                   mt-1
@@ -394,9 +391,9 @@ const OnboardingPage = () => {
                   lg:text-[12px]
                 "
               >
-                Choose a voice and accent to personalize your experience.
+                Choose a voice and accent to personalize your
+                experience.
               </p>
-
 
               {/* Voice buttons */}
 
@@ -409,7 +406,6 @@ const OnboardingPage = () => {
                   sm:gap-3
                 "
               >
-
                 {/* =================================================
                     MALE
                 ================================================= */}
@@ -425,6 +421,7 @@ const OnboardingPage = () => {
                     items-center
                     justify-between
                     rounded-xl
+                    border
                     px-3
                     text-[12px]
                     font-medium
@@ -441,27 +438,24 @@ const OnboardingPage = () => {
                     ${
                       voice === "male"
                         ? "bg-white text-gray-900 shadow-sm"
-                        : "border border-gray-200 bg-white/70 text-gray-600 hover:border-gray-300"
+                        : "border-gray-200 bg-white/70 text-gray-600 hover:border-gray-300"
                     }
                   `}
                   style={
                     voice === "male"
                       ? {
                           border: `1.5px solid ${activeColor}`,
+                          boxShadow: `0 0 0 2px ${activeColor}15`,
                         }
                       : {}
                   }
                 >
-
                   <span>Male</span>
-
 
                   {voice === "male" && (
                     <SelectionIcon color={activeColor} />
                   )}
-
                 </button>
-
 
                 {/* =================================================
                     FEMALE
@@ -478,6 +472,7 @@ const OnboardingPage = () => {
                     items-center
                     justify-between
                     rounded-xl
+                    border
                     px-3
                     text-[12px]
                     font-medium
@@ -494,38 +489,32 @@ const OnboardingPage = () => {
                     ${
                       voice === "female"
                         ? "bg-white text-gray-900 shadow-sm"
-                        : "border border-gray-200 bg-white/70 text-gray-600 hover:border-gray-300"
+                        : "border-gray-200 bg-white/70 text-gray-600 hover:border-gray-300"
                     }
                   `}
                   style={
                     voice === "female"
                       ? {
                           border: `1.5px solid ${activeColor}`,
+                          boxShadow: `0 0 0 2px ${activeColor}15`,
                         }
                       : {}
                   }
                 >
-
                   <span>Female</span>
-
 
                   {voice === "female" && (
                     <SelectionIcon color={activeColor} />
                   )}
-
                 </button>
-
               </div>
-
             </div>
-
 
             {/* =================================================
                 ACCENT
             ================================================= */}
 
-            <div className="mb-7 sm:mb-8">
-
+            <div className="mb-6 sm:mb-7">
               <h2
                 className="
                   mb-3
@@ -541,7 +530,6 @@ const OnboardingPage = () => {
                 Select Accent
               </h2>
 
-
               {/* Accent cards */}
 
               <div
@@ -553,11 +541,8 @@ const OnboardingPage = () => {
                   sm:gap-3
                 "
               >
-
                 {accents.map((item) => {
-
                   const selected = accent === item.id;
-
 
                   return (
                     <button
@@ -570,7 +555,7 @@ const OnboardingPage = () => {
                         min-w-0
                         flex-col
                         items-start
-                        rounded-lg
+                        rounded-xl
                         border
                         bg-white/80
                         px-2
@@ -579,32 +564,26 @@ const OnboardingPage = () => {
                         text-left
                         transition
 
-                        sm:rounded-xl
                         sm:px-3
                         sm:pb-3.5
                         sm:pt-3
 
                         ${
                           selected
-                            ? "bg-white shadow-sm"
-                            : "border-gray-200 hover:border-gray-300"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "border-gray-200 text-gray-800 hover:border-gray-300"
                         }
                       `}
                       style={
                         selected
                           ? {
                               border: `1.5px solid ${activeColor}`,
+                              boxShadow: `0 0 0 2px ${activeColor}15`,
                             }
                           : {}
                       }
                     >
-
-                      {/* =========================================
-                          FLAG
-                          
-                          The flag and tick are both positioned
-                          from the same top reference.
-                      ========================================= */}
+                      {/* Flag */}
 
                       <span
                         className="
@@ -620,10 +599,7 @@ const OnboardingPage = () => {
                         {item.flag}
                       </span>
 
-
-                      {/* =========================================
-                          ACCENT LABEL
-                      ========================================= */}
+                      {/* Accent label */}
 
                       <span
                         className="
@@ -644,10 +620,7 @@ const OnboardingPage = () => {
                         {item.label}
                       </span>
 
-
-                      {/* =========================================
-                          ACCENT SUBTEXT
-                      ========================================= */}
+                      {/* Accent subtext */}
 
                       <span
                         className="
@@ -663,12 +636,7 @@ const OnboardingPage = () => {
                         Accent
                       </span>
 
-
-                      {/* =========================================
-                          SELECTION TICK
-
-                          SAME TOP LEVEL AS FLAG
-                      ========================================= */}
+                      {/* Selection tick */}
 
                       {selected && (
                         <span
@@ -690,7 +658,6 @@ const OnboardingPage = () => {
                             backgroundColor: activeColor,
                           }}
                         >
-
                           <svg
                             viewBox="0 0 24 24"
                             fill="none"
@@ -704,25 +671,19 @@ const OnboardingPage = () => {
                               strokeLinejoin="round"
                             />
                           </svg>
-
                         </span>
                       )}
-
                     </button>
                   );
                 })}
-
               </div>
-
             </div>
-
 
             {/* =================================================
                 BRAND COLOR
             ================================================= */}
 
-            <div className="mb-8 sm:mb-10">
-
+            <div className="mb-7 sm:mb-8">
               <h2
                 className="
                   text-[13px]
@@ -736,7 +697,6 @@ const OnboardingPage = () => {
               >
                 Brand color
               </h2>
-
 
               <p
                 className="
@@ -753,7 +713,6 @@ const OnboardingPage = () => {
                 Select your brand color
               </p>
 
-
               {/* Color options */}
 
               <div
@@ -767,11 +726,8 @@ const OnboardingPage = () => {
                   sm:gap-x-5
                 "
               >
-
                 {brandColors.map((item) => {
-
                   const selected = brandColor === item.id;
-
 
                   return (
                     <button
@@ -785,7 +741,6 @@ const OnboardingPage = () => {
                         items-center
                       "
                     >
-
                       {/* Color circle */}
 
                       <span
@@ -817,7 +772,6 @@ const OnboardingPage = () => {
                         }}
                       />
 
-                      
                       {/* Color label */}
 
                       <span
@@ -831,15 +785,11 @@ const OnboardingPage = () => {
                       >
                         {item.label}
                       </span>
-
                     </button>
                   );
                 })}
-
               </div>
-
             </div>
-
 
             {/* =================================================
                 CONTINUE BUTTON
@@ -848,11 +798,11 @@ const OnboardingPage = () => {
             <button
               type="button"
               onClick={handleContinue}
-              disabled={!name.trim()}
+              disabled={!canContinue}
               className="
                 h-10
                 w-full
-                rounded-lg
+                rounded-xl
                 bg-black
                 text-[12px]
                 font-medium
@@ -873,17 +823,11 @@ const OnboardingPage = () => {
             >
               Continue
             </button>
-
           </div>
-
         </section>
-
 
         {/* ====================================================
             RIGHT SIDE - SONAR ORB + VISUALIZER
-
-            hidden = mobile/tablet
-            lg:flex = desktop and above
         ==================================================== */}
 
         <section
@@ -898,7 +842,6 @@ const OnboardingPage = () => {
             lg:flex
           "
         >
-
           <div
             className="
               flex
@@ -911,21 +854,19 @@ const OnboardingPage = () => {
               xl:-translate-x-[3%]
             "
           >
-
             {/* =================================================
                 SONAR ORB
             ================================================= */}
 
             <div
               className="
-                w-[210px]
+                w-[180px]
 
-                xl:w-[230px]
+                xl:w-[190px]
               "
             >
               <SonarOrb />
             </div>
-
 
             {/* =================================================
                 VISUALIZER
@@ -934,17 +875,12 @@ const OnboardingPage = () => {
             <div className="-mt-[3px]">
               <Visualizer isPlaying={true} />
             </div>
-
           </div>
-
         </section>
-
       </div>
-
     </main>
   );
 };
-
 
 // ============================================================
 // SELECTION ICON
@@ -965,7 +901,6 @@ const SelectionIcon = ({ color }) => {
         backgroundColor: color,
       }}
     >
-
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -979,10 +914,8 @@ const SelectionIcon = ({ color }) => {
           strokeLinejoin="round"
         />
       </svg>
-
     </span>
   );
 };
-
 
 export default OnboardingPage;
