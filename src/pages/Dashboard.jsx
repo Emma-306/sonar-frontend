@@ -3,6 +3,37 @@ import { assets } from "../assets/assets.js";
 import ThemeToggle from "../components/ThemeToggle";
 import useAuthStore from "../stores/authStore.js";
 
+// ==========================================
+// BRAND COLORS
+// ==========================================
+
+const brandColors = [
+  {
+    id: "purple",
+    color: "#A855F7",
+    label: "Purple",
+  },
+  {
+    id: "blue",
+    color: "#409CF2",
+    label: "Blue",
+  },
+  {
+    id: "coral",
+    color: "#FF6B6B",
+    label: "Coral",
+  },
+  {
+    id: "pink",
+    color: "#EC137F",
+    label: "Pink",
+  },
+  {
+    id: "teal",
+    color: "#00D2FF",
+    label: "Teal",
+  },
+];
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
@@ -17,9 +48,11 @@ const Dashboard = () => {
   // ==========================================
 
   const user = useAuthStore((state) => state.user);
+
   const getCurrentUser = useAuthStore(
     (state) => state.getCurrentUser
   );
+
   const isLoading = useAuthStore(
     (state) => state.isLoading
   );
@@ -35,13 +68,27 @@ const Dashboard = () => {
   }, [user, getCurrentUser]);
 
   // ==========================================
-  // GET DISPLAY NAME FROM DATABASE
+  // USER INFORMATION
   // ==========================================
 
+  // Name entered during onboarding
+  // Example: "Johnny"
   const displayName =
     user?.onboarding?.displayName ||
     user?.name ||
     "User";
+
+  // ==========================================
+  // GET USER'S BRAND COLOR
+  // ==========================================
+
+  const selectedBrandColor =
+    user?.onboarding?.brandColor || "purple";
+
+  const brandColor =
+    brandColors.find(
+      (item) => item.id === selectedBrandColor
+    )?.color || "#A855F7";
 
   // ==========================================
   // BROWSE FILES
@@ -64,16 +111,19 @@ const Dashboard = () => {
 
     setError("");
 
+    // Check PDF
     if (file.type !== "application/pdf") {
       setError("Please select a PDF file.");
       event.target.value = "";
       return;
     }
 
+    // Check file size
     if (file.size > MAX_FILE_SIZE) {
       setError(
         "File is too large. Please select a PDF smaller than 25MB."
       );
+
       event.target.value = "";
       return;
     }
@@ -259,19 +309,19 @@ const Dashboard = () => {
             items-center
             justify-center
             rounded-full
-            bg-blue-50
 
             sm:h-11
             sm:w-11
-
-            dark:bg-blue-500/10
           "
+          style={{
+            backgroundColor: `${brandColor}15`,
+          }}
         >
           <svg
-            className="h-5 w-5 text-blue-500"
+            className="h-5 w-5"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
+            stroke={brandColor}
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -329,9 +379,11 @@ const Dashboard = () => {
                 className="
                   cursor-pointer
                   font-medium
-                  text-blue-500
                   hover:underline
                 "
+                style={{
+                  color: brandColor,
+                }}
               >
                 Browse files
               </button>
@@ -413,6 +465,8 @@ const Dashboard = () => {
               dark:bg-[#151515]
             "
           >
+            {/* FILE INFORMATION */}
+
             <div className="min-w-0 flex-1">
               <p
                 className="
@@ -441,7 +495,11 @@ const Dashboard = () => {
                   dark:text-gray-400
                 "
               >
-                {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                {(
+                  selectedFile.size /
+                  (1024 * 1024)
+                ).toFixed(2)}{" "}
+                MB
               </p>
             </div>
 
