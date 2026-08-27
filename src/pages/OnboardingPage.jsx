@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Visualizer from "../components/Visualizer";
 import { assets } from "../assets/assets.js";
+import useAuthStore from "../stores/authStore.js";
+
 
 // ============================================================
 // ACCENTS
@@ -37,23 +39,23 @@ const brandColors = [
   },
   {
     id: "blue",
-    color: "#3B82F6",
+    color: "#409CF2",
     label: "Blue",
   },
   {
-    id: "beige",
-    color: "#E7D5B8",
-    label: "Beige",
+    id: "coral",
+    color: "#FF6B6B",
+    label: "Coral",
   },
   {
-    id: "maroon",
-    color: "#9F1239",
-    label: "Maroon",
+    id: "pink",
+    color: "#EC137F",
+    label: "Pink",
   },
   {
-    id: "green",
-    color: "#22C55E",
-    label: "Green",
+    id: "teal",
+    color: "#00D2FF",
+    label: "Teal",
   },
 ];
 
@@ -63,6 +65,17 @@ const brandColors = [
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
+
+  // ==========================================================
+  // AUTH STORE
+  // ==========================================================
+
+  const completeOnboarding = useAuthStore(
+    (state) => state.completeOnboarding
+  );
+
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const authError = useAuthStore((state) => state.error);
 
   // ==========================================================
   // STATE
@@ -91,11 +104,11 @@ const OnboardingPage = () => {
     accent !== null;
 
   // ==========================================================
-  // CONTINUE
+  // COMPLETE ONBOARDING
   // ==========================================================
 
-  const handleContinue = () => {
-    if (!canContinue) return;
+  const handleContinue = async () => {
+    if (!canContinue || isLoading) return;
 
     const preferences = {
       name: name.trim(),
@@ -104,15 +117,25 @@ const OnboardingPage = () => {
       brandColor,
     };
 
-    console.log(preferences);
+    console.log(
+      "Submitting onboarding preferences:",
+      preferences
+    );
 
-    // For now, navigate directly to dashboard
-    navigate("/dashboard");
+    // Send onboarding data to backend
+    const result = await completeOnboarding(preferences);
+
+    console.log("Onboarding result:", result);
+
+    // Only go to dashboard if backend succeeds
+    if (result.success) {
+      navigate("/dashboard", { replace: true });
+    }
   };
 
-  // ==========================================================
+  // ============================================================
   // UI
-  // ==========================================================
+  // ============================================================
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden">
@@ -138,6 +161,7 @@ const OnboardingPage = () => {
       ====================================================== */}
 
       <div className="relative z-10 flex min-h-screen w-full">
+
         {/* ====================================================
             LEFT SIDE
         ==================================================== */}
@@ -185,6 +209,7 @@ const OnboardingPage = () => {
               xl:max-w-[420px]
             "
           >
+
             {/* =================================================
                 LOGO
             ================================================= */}
@@ -199,8 +224,6 @@ const OnboardingPage = () => {
                 sm:mb-7
               "
             >
-              {/* Logo icon */}
-
               <div
                 className="
                   flex
@@ -231,13 +254,10 @@ const OnboardingPage = () => {
                 </svg>
               </div>
 
-              {/* Logo text */}
-
               <span
                 className="
                   font-semibold
                   text-gray-900
-
                   sm:text-[19px]
                 "
               >
@@ -257,9 +277,7 @@ const OnboardingPage = () => {
                   leading-tight
                   tracking-tight
                   text-gray-900
-
                   sm:text-[30px]
-
                   lg:text-[32px]
                 "
               >
@@ -271,7 +289,6 @@ const OnboardingPage = () => {
                   mt-1
                   text-[13px]
                   text-gray-500
-
                   sm:text-[14px]
                 "
               >
@@ -292,7 +309,6 @@ const OnboardingPage = () => {
                   text-[12px]
                   font-semibold
                   text-gray-900
-
                   sm:text-[13px]
                 "
               >
@@ -305,6 +321,7 @@ const OnboardingPage = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your preferred name"
+                disabled={isLoading}
                 className="
                   h-10
                   w-full
@@ -318,8 +335,10 @@ const OnboardingPage = () => {
                   outline-none
                   backdrop-blur-sm
                   transition
-
                   placeholder:text-gray-400
+
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
 
                   sm:h-11
                   sm:px-4
@@ -333,7 +352,8 @@ const OnboardingPage = () => {
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = activeColor;
-                  e.currentTarget.style.boxShadow = `0 0 0 2px ${activeColor}20`;
+                  e.currentTarget.style.boxShadow =
+                    `0 0 0 2px ${activeColor}20`;
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = name
@@ -357,9 +377,7 @@ const OnboardingPage = () => {
                   text-[13px]
                   font-semibold
                   text-gray-900
-
                   sm:text-[14px]
-
                   lg:text-[15px]
                 "
               >
@@ -373,9 +391,7 @@ const OnboardingPage = () => {
                   text-[10px]
                   leading-relaxed
                   text-gray-500
-
                   sm:text-[11px]
-
                   lg:text-[12px]
                 "
               >
@@ -383,22 +399,21 @@ const OnboardingPage = () => {
                 experience.
               </p>
 
-              {/* Voice buttons */}
-
               <div
                 className="
                   grid
                   grid-cols-2
                   gap-2
-
                   sm:gap-3
                 "
               >
+
                 {/* MALE */}
 
                 <button
                   type="button"
                   onClick={() => setVoice("male")}
+                  disabled={isLoading}
                   className={`
                     relative
                     flex
@@ -412,6 +427,9 @@ const OnboardingPage = () => {
                     text-[12px]
                     font-medium
                     transition
+
+                    disabled:cursor-not-allowed
+                    disabled:opacity-60
 
                     sm:h-[48px]
                     sm:px-4
@@ -448,6 +466,7 @@ const OnboardingPage = () => {
                 <button
                   type="button"
                   onClick={() => setVoice("female")}
+                  disabled={isLoading}
                   className={`
                     relative
                     flex
@@ -461,6 +480,9 @@ const OnboardingPage = () => {
                     text-[12px]
                     font-medium
                     transition
+
+                    disabled:cursor-not-allowed
+                    disabled:opacity-60
 
                     sm:h-[48px]
                     sm:px-4
@@ -491,6 +513,7 @@ const OnboardingPage = () => {
                     <SelectionIcon color={activeColor} />
                   )}
                 </button>
+
               </div>
             </div>
 
@@ -505,23 +528,18 @@ const OnboardingPage = () => {
                   text-[13px]
                   font-semibold
                   text-gray-900
-
                   sm:text-[14px]
-
                   lg:text-[15px]
                 "
               >
                 Select Accent
               </h2>
 
-              {/* Accent cards */}
-
               <div
                 className="
                   grid
                   grid-cols-3
                   gap-2
-
                   sm:gap-3
                 "
               >
@@ -533,6 +551,7 @@ const OnboardingPage = () => {
                       key={item.id}
                       type="button"
                       onClick={() => setAccent(item.id)}
+                      disabled={isLoading}
                       className={`
                         relative
                         flex
@@ -547,6 +566,9 @@ const OnboardingPage = () => {
                         pt-2.5
                         text-left
                         transition
+
+                        disabled:cursor-not-allowed
+                        disabled:opacity-60
 
                         sm:px-3
                         sm:pb-3.5
@@ -567,23 +589,17 @@ const OnboardingPage = () => {
                           : {}
                       }
                     >
-                      {/* Flag */}
-
                       <span
                         className="
                           block
                           text-[15px]
                           leading-none
-
                           sm:text-[17px]
-
                           lg:text-[18px]
                         "
                       >
                         {item.flag}
                       </span>
-
-                      {/* Accent label */}
 
                       <span
                         className="
@@ -595,32 +611,24 @@ const OnboardingPage = () => {
                           font-semibold
                           leading-tight
                           text-gray-800
-
                           sm:text-[10px]
-
                           lg:text-[11px]
                         "
                       >
                         {item.label}
                       </span>
 
-                      {/* Accent subtext */}
-
                       <span
                         className="
                           mt-0.5
                           text-[8px]
                           text-gray-400
-
                           sm:text-[9px]
-
                           lg:text-[10px]
                         "
                       >
                         Accent
                       </span>
-
-                      {/* Selection tick */}
 
                       {selected && (
                         <span
@@ -634,7 +642,6 @@ const OnboardingPage = () => {
                             items-center
                             justify-center
                             rounded-full
-
                             sm:right-2.5
                             sm:top-2.5
                           "
@@ -673,9 +680,7 @@ const OnboardingPage = () => {
                   text-[13px]
                   font-semibold
                   text-gray-900
-
                   sm:text-[14px]
-
                   lg:text-[15px]
                 "
               >
@@ -688,16 +693,12 @@ const OnboardingPage = () => {
                   mb-3
                   text-[10px]
                   text-gray-500
-
                   sm:text-[11px]
-
                   lg:text-[12px]
                 "
               >
                 Select your brand color
               </p>
-
-              {/* Color options */}
 
               <div
                 className="
@@ -706,7 +707,6 @@ const OnboardingPage = () => {
                   items-start
                   gap-x-4
                   gap-y-3
-
                   sm:gap-x-5
                 "
               >
@@ -718,15 +718,16 @@ const OnboardingPage = () => {
                       key={item.id}
                       type="button"
                       onClick={() => setBrandColor(item.id)}
+                      disabled={isLoading}
                       className="
                         group
                         flex
                         flex-col
                         items-center
+                        disabled:cursor-not-allowed
+                        disabled:opacity-60
                       "
                     >
-                      {/* Color circle */}
-
                       <span
                         className={`
                           flex
@@ -756,14 +757,11 @@ const OnboardingPage = () => {
                         }}
                       />
 
-                      {/* Color label */}
-
                       <span
                         className="
                           mt-1.5
                           text-[9px]
                           text-gray-500
-
                           sm:text-[10px]
                         "
                       >
@@ -776,16 +774,42 @@ const OnboardingPage = () => {
             </div>
 
             {/* =================================================
+                ERROR MESSAGE
+            ================================================= */}
+
+            {authError && (
+              <div
+                className="
+                  mb-4
+                  rounded-xl
+                  border
+                  border-red-200
+                  bg-red-50
+                  px-3
+                  py-2.5
+                  text-[11px]
+                  text-red-600
+                "
+              >
+                {authError}
+              </div>
+            )}
+
+            {/* =================================================
                 CONTINUE BUTTON
             ================================================= */}
 
             <button
               type="button"
               onClick={handleContinue}
-              disabled={!canContinue}
+              disabled={!canContinue || isLoading}
               className="
+                flex
                 h-10
                 w-full
+                items-center
+                justify-center
+                gap-2
                 rounded-xl
                 bg-black
                 text-[12px]
@@ -805,7 +829,25 @@ const OnboardingPage = () => {
                 lg:w-[150px]
               "
             >
-              Continue
+              {isLoading ? (
+                <>
+                  <span
+                    className="
+                      h-3.5
+                      w-3.5
+                      animate-spin
+                      rounded-full
+                      border-2
+                      border-white/30
+                      border-t-white
+                    "
+                  />
+
+                  Saving...
+                </>
+              ) : (
+                "Continue"
+              )}
             </button>
           </div>
         </section>
@@ -822,7 +864,6 @@ const OnboardingPage = () => {
             flex-col
             items-center
             justify-center
-
             lg:flex
           "
         >
@@ -834,21 +875,19 @@ const OnboardingPage = () => {
               flex-col
               items-center
               justify-center
-
               xl:-translate-x-[3%]
             "
           >
             {/* =================================================
-                SONAR ORB - WEBM ASSET
+                SONAR ORB
             ================================================= */}
 
             <div
               className="
                 flex
+                w-[240px]
                 items-center
                 justify-center
-                w-[240px]
-
                 xl:w-[270px]
               "
             >
