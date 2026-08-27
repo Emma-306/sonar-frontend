@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login";
-import StepOne from "./pages/onboarding/StepOne";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
+import OnboardingPage from "./pages/OnboardingPage";
 
 const App = () => {
   return (
@@ -15,7 +15,7 @@ const App = () => {
         {/* Onboarding */}
         <Route
           path="/onboarding"
-          element={<StepOne />}
+          element={<OnboardingPage />}
         />
          <Route path="/dashboard" element={<DashboardLayout />}>
 

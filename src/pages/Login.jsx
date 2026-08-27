@@ -5,7 +5,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleGoogleLogin = () => {
-    navigate("/dashboard");
+    navigate("/onboarding");
   };
 
   return (
