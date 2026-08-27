@@ -1,9 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { assets } from "../assets/assets.js";
 
-const pinnedFiles = [
-  { name: "Meeting_Notes.pdf", path: "#" },
-];
+const pinnedFiles = [{ name: "Meeting_Notes.pdf", path: "#" }];
 
 const recentFiles = [
   { name: "Project_Notes.pdf", path: "#" },
@@ -283,9 +281,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                     <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z" />
                   </svg>
 
-                  <span className="min-w-0 truncate">
-                    {file.name}
-                  </span>
+                  <span className="min-w-0 truncate">{file.name}</span>
                 </button>
               ))}
             </div>
@@ -350,9 +346,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                     <path d="M10 9H8" />
                   </svg>
 
-                  <span className="min-w-0 truncate">
-                    {file.name}
-                  </span>
+                  <span className="min-w-0 truncate">{file.name}</span>
                 </button>
               ))}
             </div>
@@ -371,30 +365,31 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           "
         >
           {/* Upgrade */}
-          <button
-            type="button"
+          <NavLink
+            to="/plan-comparison"
+            onClick={onClose}
             className="
-              mb-3
-              flex
-              h-10
-              w-full
-              cursor-pointer
-              items-center
-              justify-center
-              gap-2
-              rounded-lg
-              bg-gradient-to-r
-              from-[#3B82F6]
-              to-[#9333EA]
-              px-2
-              text-[11px]
-              font-medium
-              text-white
-              transition
-              hover:opacity-90
-              active:scale-[0.98]
-              sm:text-[12px]
-            "
+    mb-3
+    flex
+    h-10
+    w-full
+    cursor-pointer
+    items-center
+    justify-center
+    gap-2
+    rounded-lg
+    bg-gradient-to-r
+    from-[#3B82F6]
+    to-[#9333EA]
+    px-2
+    text-[11px]
+    font-medium
+    text-white
+    transition
+    hover:opacity-90
+    active:scale-[0.98]
+    sm:text-[12px]
+  "
           >
             <svg
               className="h-3.5 w-3.5 shrink-0"
@@ -405,7 +400,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             </svg>
 
             <span>Upgrade to Pro</span>
-          </button>
+          </NavLink>
 
           {/* User */}
           <div className="flex min-w-0 items-center gap-2.5 px-1 py-1 sm:gap-3">

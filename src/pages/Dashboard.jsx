@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import SonarOrb from "../components/SonarOrb.jsx";
+import { assets } from "../assets/assets.js";
 import ThemeToggle from "../components/ThemeToggle";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
@@ -41,22 +41,61 @@ const Dashboard = () => {
   const handleDeleteFile = () => {
     setSelectedFile(null);
     setError("");
+
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   return (
-    <div className="relative flex min-h-full w-full flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-10 md:px-7 md:py-12">
-      
+    <div
+      className="
+        relative
+        flex
+        min-h-full
+        w-full
+        flex-col
+        items-center
+        justify-center
+        px-4
+        py-8
+        sm:px-6
+        sm:py-10
+        md:px-7
+        md:py-12
+      "
+    >
       {/* Theme Toggle - Top Right */}
       <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-5">
         <ThemeToggle />
       </div>
 
       {/* Sonar Orb */}
-      <div className="mb-6 sm:mb-7 md:mb-8">
-        <SonarOrb />
+      <div
+        className="
+          mb-6
+          flex
+          items-center
+          justify-center
+          sm:mb-7
+          md:mb-8
+        "
+      >
+        <video
+          src={assets.sonarOrb}
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-label="Sonar"
+          className="
+            h-auto
+            object-contain
+            w-[160px]
+sm:w-[180px]
+md:w-[200px]
+          "
+        />
       </div>
 
       {/* Welcome text */}

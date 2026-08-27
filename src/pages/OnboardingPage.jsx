@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import SonarOrb from "../components/SonarOrb";
 import Visualizer from "../components/Visualizer";
 import { assets } from "../assets/assets.js";
 
@@ -71,14 +69,8 @@ const OnboardingPage = () => {
   // ==========================================================
 
   const [name, setName] = useState("");
-
-  // No voice selected by default
   const [voice, setVoice] = useState(null);
-
-  // No accent selected by default
   const [accent, setAccent] = useState(null);
-
-  // Purple is the default brand color
   const [brandColor, setBrandColor] = useState("purple");
 
   // ==========================================================
@@ -212,15 +204,14 @@ const OnboardingPage = () => {
               <div
                 className="
                   flex
+                  h-9
+                  w-9
                   items-center
                   justify-center
                   rounded-full
                   bg-gradient-to-br
                   from-purple-500
                   to-violet-600
-
-                  h-9
-                  w-9
                 "
               >
                 <svg
@@ -229,10 +220,7 @@ const OnboardingPage = () => {
                   stroke="white"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  className="
-                    h-6
-                    w-6
-                  "
+                  className="h-6 w-6"
                 >
                   <path d="M2 10v4" />
                   <path d="M6 6v12" />
@@ -406,9 +394,7 @@ const OnboardingPage = () => {
                   sm:gap-3
                 "
               >
-                {/* =================================================
-                    MALE
-                ================================================= */}
+                {/* MALE */}
 
                 <button
                   type="button"
@@ -457,9 +443,7 @@ const OnboardingPage = () => {
                   )}
                 </button>
 
-                {/* =================================================
-                    FEMALE
-                ================================================= */}
+                {/* FEMALE */}
 
                 <button
                   type="button"
@@ -855,17 +839,33 @@ const OnboardingPage = () => {
             "
           >
             {/* =================================================
-                SONAR ORB
+                SONAR ORB - WEBM ASSET
             ================================================= */}
 
             <div
               className="
-                w-[180px]
+                flex
+                items-center
+                justify-center
+                w-[240px]
 
-                xl:w-[190px]
+                xl:w-[270px]
               "
             >
-              <SonarOrb />
+              <video
+                src={assets.sonarOrb}
+                autoPlay
+                loop
+                muted
+                playsInline
+                aria-label="Sonar"
+                className="
+                  block
+                  h-auto
+                  w-full
+                  object-contain
+                "
+              />
             </div>
 
             {/* =================================================
