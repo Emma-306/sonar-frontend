@@ -181,7 +181,7 @@ const DashboardLayout = () => {
             flex-1
             overflow-x-hidden
             overflow-y-auto
-            bg-[#fafafa]
+            bg-white
 
             dark:bg-black
           "

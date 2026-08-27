@@ -15,8 +15,6 @@ const SonarOrb = ({ isPlaying = false }) => {
     let animationFrameId;
     let time = 0;
 
-    // Base drawing size.
-    // CSS controls the actual displayed size.
     const width = 220;
     const height = 220;
 
@@ -31,7 +29,6 @@ const SonarOrb = ({ isPlaying = false }) => {
     const centerX = width / 2;
     const centerY = height / 2;
 
-    // Sphere radius
     const radius = 82;
 
     const render = () => {
@@ -338,11 +335,11 @@ const SonarOrb = ({ isPlaying = false }) => {
           to-cyan-400/30
           blur-3xl
 
-          h-[75%]
-          w-[75%]
+          h-[70%]
+          w-[70%]
 
-          sm:h-[80%]
-          sm:w-[80%]
+          sm:h-[75%]
+          sm:w-[75%]
 
           ${isPlaying ? "animate-pulse" : ""}
         `}
@@ -355,19 +352,19 @@ const SonarOrb = ({ isPlaying = false }) => {
           relative
           z-10
           h-auto
-          w-[150px]
+          w-[110px]
           max-w-full
-          drop-shadow-[0_0_25px_rgba(168,85,247,0.5)]
+          drop-shadow-[0_0_20px_rgba(168,85,247,0.5)]
 
-          xs:w-[165px]
+          xs:w-[120px]
 
-          sm:w-[180px]
+          sm:w-[135px]
 
-          md:w-[200px]
+          md:w-[150px]
 
-          lg:w-[220px]
+          lg:w-[165px]
 
-          xl:w-[240px]
+          xl:w-[180px]
         "
         style={{
           aspectRatio: "1 / 1",
