@@ -15,20 +15,23 @@ const SonarOrb = ({ isPlaying = false }) => {
     let animationFrameId;
     let time = 0;
 
-    // Smaller canvas
+    // Base drawing size.
+    // CSS controls the actual displayed size.
     const width = 220;
     const height = 220;
 
-    // High DPI
-    canvas.width = width * 2;
-    canvas.height = height * 2;
+    // High DPI support
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    ctx.scale(2, 2);
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const centerX = width / 2;
     const centerY = height / 2;
 
-    // Smaller sphere
+    // Sphere radius
     const radius = 82;
 
     const render = () => {
@@ -103,30 +106,11 @@ const SonarOrb = ({ isPlaying = false }) => {
         centerY + radius
       );
 
-      sphereGradient.addColorStop(
-        0,
-        "#38bdf8"
-      );
-
-      sphereGradient.addColorStop(
-        0.2,
-        "#818cf8"
-      );
-
-      sphereGradient.addColorStop(
-        0.55,
-        "#a855f7"
-      );
-
-      sphereGradient.addColorStop(
-        0.85,
-        "#6b21a8"
-      );
-
-      sphereGradient.addColorStop(
-        1,
-        "#3b0764"
-      );
+      sphereGradient.addColorStop(0, "#38bdf8");
+      sphereGradient.addColorStop(0.2, "#818cf8");
+      sphereGradient.addColorStop(0.55, "#a855f7");
+      sphereGradient.addColorStop(0.85, "#6b21a8");
+      sphereGradient.addColorStop(1, "#3b0764");
 
       ctx.fillStyle = sphereGradient;
 
@@ -185,7 +169,6 @@ const SonarOrb = ({ isPlaying = false }) => {
           color: "rgba(56,189,248,0.85)",
           width: 2,
         },
-
         {
           yOffset: -12,
           freq: 0.045,
@@ -194,7 +177,6 @@ const SonarOrb = ({ isPlaying = false }) => {
           color: "rgba(255,255,255,0.95)",
           width: 2.2,
         },
-
         {
           yOffset: 0,
           freq: 0.03,
@@ -203,7 +185,6 @@ const SonarOrb = ({ isPlaying = false }) => {
           color: "rgba(232,121,249,0.9)",
           width: 2.7,
         },
-
         {
           yOffset: 12,
           freq: 0.04,
@@ -212,7 +193,6 @@ const SonarOrb = ({ isPlaying = false }) => {
           color: "rgba(192,38,211,0.85)",
           width: 2,
         },
-
         {
           yOffset: 24,
           freq: 0.05,
@@ -227,30 +207,21 @@ const SonarOrb = ({ isPlaying = false }) => {
         ctx.beginPath();
 
         ctx.strokeStyle = wave.color;
-
         ctx.lineWidth = wave.width;
 
         ctx.shadowColor = wave.color;
-
         ctx.shadowBlur = isPlaying ? 15 : 10;
 
         const startX = centerX - radius;
-
         const endX = centerX + radius;
 
-        for (
-          let x = startX;
-          x <= endX;
-          x += 1.5
-        ) {
+        for (let x = startX; x <= endX; x += 1.5) {
           const normalizedX =
-            (x - startX) /
-            (radius * 2);
+            (x - startX) / (radius * 2);
 
-          const edgeFactor =
-            Math.sin(
-              normalizedX * Math.PI
-            );
+          const edgeFactor = Math.sin(
+            normalizedX * Math.PI
+          );
 
           const y =
             centerY +
@@ -337,37 +308,70 @@ const SonarOrb = ({ isPlaying = false }) => {
     render();
 
     return () => {
-      cancelAnimationFrame(
-        animationFrameId
-      );
+      cancelAnimationFrame(animationFrameId);
     };
   }, [isPlaying]);
 
   return (
     <div
-      className={`relative flex items-center justify-center transition-transform duration-500 ${
-        isPlaying
-          ? "scale-105"
-          : "scale-100"
-      }`}
+      className={`
+        relative
+        flex
+        w-full
+        items-center
+        justify-center
+        transition-transform
+        duration-500
+
+        ${isPlaying ? "scale-105" : "scale-100"}
+      `}
     >
       {/* Glow */}
       <div
-        className={`absolute inset-0 -m-7 rounded-full bg-gradient-to-tr from-purple-600/30 via-fuchsia-500/20 to-cyan-400/30 blur-3xl ${
-          isPlaying
-            ? "animate-pulse"
-            : ""
-        }`}
+        className={`
+          pointer-events-none
+          absolute
+          rounded-full
+          bg-gradient-to-tr
+          from-purple-600/30
+          via-fuchsia-500/20
+          to-cyan-400/30
+          blur-3xl
+
+          h-[75%]
+          w-[75%]
+
+          sm:h-[80%]
+          sm:w-[80%]
+
+          ${isPlaying ? "animate-pulse" : ""}
+        `}
       />
 
-      {/* Orb */}
+      {/* Responsive Orb */}
       <canvas
         ref={canvasRef}
+        className="
+          relative
+          z-10
+          h-auto
+          w-[150px]
+          max-w-full
+          drop-shadow-[0_0_25px_rgba(168,85,247,0.5)]
+
+          xs:w-[165px]
+
+          sm:w-[180px]
+
+          md:w-[200px]
+
+          lg:w-[220px]
+
+          xl:w-[240px]
+        "
         style={{
-          width: "220px",
-          height: "220px",
+          aspectRatio: "1 / 1",
         }}
-        className="relative z-10 drop-shadow-[0_0_25px_rgba(168,85,247,0.5)]"
       />
     </div>
   );

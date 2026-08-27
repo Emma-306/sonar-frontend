@@ -31,46 +31,89 @@ const DashboardLayout = () => {
     },
   };
 
-  const currentPage = pageInfo[location.pathname] || pageInfo["/dashboard"];
+  const currentPage =
+    pageInfo[location.pathname] || pageInfo["/dashboard"];
 
   return (
     <div
       className="
-        flex h-screen w-full overflow-hidden
-        bg-white text-gray-900
-        dark:bg-black dark:text-white
+        flex
+        h-dvh
+        min-h-0
+        w-full
+        overflow-hidden
+        bg-white
+        text-gray-900
+        dark:bg-black
+        dark:text-white
       "
     >
-      {/* Mobile backdrop */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
       {/* SIDEBAR */}
       <DashboardSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      {/* MAIN */}
-      <main className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile top bar with hamburger + ThemeToggle */}
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 px-4 dark:border-[#1d1d1d] lg:hidden">
-          <div className="flex items-center gap-3">
+      {/* MAIN AREA */}
+      <main
+        className="
+          flex
+          min-h-0
+          min-w-0
+          flex-1
+          flex-col
+          overflow-hidden
+        "
+      >
+        {/* MOBILE HEADER */}
+        <header
+          className="
+            flex
+            h-14
+            w-full
+            shrink-0
+            items-center
+            justify-between
+            border-b
+            border-gray-200
+            bg-white
+            px-3
+            sm:px-4
+
+            dark:border-[#1d1d1d]
+            dark:bg-black
+
+            lg:hidden
+          "
+        >
+          {/* Left side */}
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            {/* Hamburger */}
             <button
+              type="button"
               onClick={() => setIsSidebarOpen(true)}
               className="
-        flex h-9 w-9 items-center justify-center rounded-lg
-        text-gray-600 transition
-        hover:bg-gray-100 hover:text-gray-900
-        dark:text-gray-300 dark:hover:bg-[#1a1a1a] dark:hover:text-white
-      "
+                flex
+                h-9
+                w-9
+                shrink-0
+                cursor-pointer
+                items-center
+                justify-center
+                rounded-lg
+                text-gray-600
+                transition
+                hover:bg-gray-100
+                hover:text-gray-900
+                active:scale-95
+
+                dark:text-gray-300
+                dark:hover:bg-[#1a1a1a]
+                dark:hover:text-white
+              "
               aria-label="Open sidebar"
+              aria-expanded={isSidebarOpen}
             >
-              {/* Hamburger icon */}
               <svg
                 className="h-5 w-5"
                 viewBox="0 0 24 24"
@@ -86,30 +129,60 @@ const DashboardLayout = () => {
               </svg>
             </button>
 
+            {/* Page title */}
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold text-gray-900 dark:text-white">
+              <p
+                className="
+                  truncate
+                  text-sm
+                  font-semibold
+                  text-gray-900
+                  sm:text-[15px]
+                  dark:text-white
+                "
+              >
                 {currentPage.title}
+              </p>
+
+              {/* Description only on slightly larger mobile screens */}
+              <p
+                className="
+                  hidden
+                  truncate
+                  text-[10px]
+                  text-gray-400
+                  sm:block
+                "
+              >
+                {currentPage.description}
               </p>
             </div>
           </div>
 
-          {/* Theme Toggle on the right */}
-          <ThemeToggle />
-        </div>
+          {/* Theme toggle */}
+          <div className="ml-2 shrink-0">
+            <ThemeToggle />
+          </div>
+        </header>
 
-        {/* Desktop header (hidden on mobile) */}
-        <div className="hidden lg:block">
+        {/* DESKTOP HEADER */}
+        <div className="hidden shrink-0 lg:block">
           <DashboardHeader
             title={currentPage.title}
             description={currentPage.description}
           />
         </div>
 
-        {/* OUTLET */}
+        {/* PAGE CONTENT */}
         <section
           className="
-            min-h-0 flex-1 overflow-y-auto
+            min-h-0
+            min-w-0
+            flex-1
+            overflow-x-hidden
+            overflow-y-auto
             bg-[#fafafa]
+
             dark:bg-black
           "
         >

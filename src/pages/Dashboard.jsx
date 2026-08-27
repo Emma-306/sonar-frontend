@@ -56,18 +56,40 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center p-7">
+    <div className="flex min-h-full w-full flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-10 md:px-7 md:py-12">
       {/* Sonar Orb */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-7 md:mb-8">
         <SonarOrb />
       </div>
 
       {/* Welcome text */}
-      <h1 className="mb-2 text-[28px] font-semibold tracking-tight text-gray-900 dark:text-white">
+      <h1
+        className="
+          mb-2
+          text-center
+          text-2xl
+          font-semibold
+          tracking-tight
+          text-gray-900
+          sm:text-[28px]
+          dark:text-white
+        "
+      >
         Welcome, Alex
       </h1>
 
-      <p className="mb-10 text-[14px] text-gray-500 dark:text-gray-400">
+      <p
+        className="
+          mb-8
+          px-2
+          text-center
+          text-[13px]
+          text-gray-500
+          sm:mb-10
+          sm:text-[14px]
+          dark:text-gray-400
+        "
+      >
         What would you like to do today?
       </p>
 
@@ -85,17 +107,35 @@ const Dashboard = () => {
           border-dashed
           border-gray-300
           bg-white
-          px-8
-          py-10
+          px-4
+          py-8
           transition
           hover:border-gray-400
+          sm:px-6
+          sm:py-9
+          md:px-8
+          md:py-10
           dark:border-[#333]
           dark:bg-[#0c0c0c]
           dark:hover:border-[#444]
         "
       >
         {/* Cloud upload icon */}
-        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10">
+        <div
+          className="
+            mb-4
+            flex
+            h-10
+            w-10
+            items-center
+            justify-center
+            rounded-full
+            bg-blue-50
+            sm:h-11
+            sm:w-11
+            dark:bg-blue-500/10
+          "
+        >
           <svg
             className="h-5 w-5 text-blue-500"
             viewBox="0 0 24 24"
@@ -111,11 +151,32 @@ const Dashboard = () => {
           </svg>
         </div>
 
-        <p className="mb-1 text-[14px] font-medium text-gray-800 dark:text-gray-100">
+        {/* Upload heading */}
+        <p
+          className="
+            mb-1
+            text-center
+            text-[13px]
+            font-medium
+            text-gray-800
+            sm:text-[14px]
+            dark:text-gray-100
+          "
+        >
           Upload a PDF to get started
         </p>
 
-        <p className="mb-3 text-[13px] text-gray-500 dark:text-gray-400">
+        {/* Browse text */}
+        <p
+          className="
+            mb-3
+            text-center
+            text-[12px]
+            text-gray-500
+            sm:text-[13px]
+            dark:text-gray-400
+          "
+        >
           {selectedFile ? (
             "PDF selected"
           ) : (
@@ -124,7 +185,12 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={handleBrowseClick}
-                className="cursor-pointer font-medium text-blue-500 hover:underline"
+                className="
+                  cursor-pointer
+                  font-medium
+                  text-blue-500
+                  hover:underline
+                "
               >
                 Browse files
               </button>
@@ -143,27 +209,78 @@ const Dashboard = () => {
         />
 
         {/* File size information */}
-        <p className="text-[11px] text-gray-400">
+        <p
+          className="
+            text-center
+            text-[10px]
+            text-gray-400
+            sm:text-[11px]
+          "
+        >
           Supports .pdf files up to 25MB.
         </p>
 
         {/* Error message */}
         {error && (
-          <p className="mt-4 text-center text-[12px] font-medium text-red-500">
+          <p
+            className="
+              mt-4
+              max-w-full
+              text-center
+              text-[11px]
+              font-medium
+              text-red-500
+              sm:text-[12px]
+            "
+          >
             {error}
           </p>
         )}
 
         {/* Selected file */}
         {selectedFile && !error && (
-          <div className="mt-5 flex w-full items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-[#151515]">
+          <div
+            className="
+              mt-5
+              flex
+              w-full
+              min-w-0
+              items-center
+              justify-between
+              gap-2
+              rounded-lg
+              bg-gray-50
+              px-3
+              py-3
+              sm:px-4
+              dark:bg-[#151515]
+            "
+          >
             {/* File information */}
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-medium text-gray-800 dark:text-gray-100">
+            <div className="min-w-0 flex-1">
+              <p
+                className="
+                  truncate
+                  text-[12px]
+                  font-medium
+                  text-gray-800
+                  sm:text-[13px]
+                  dark:text-gray-100
+                "
+                title={selectedFile.name}
+              >
                 {selectedFile.name}
               </p>
 
-              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+              <p
+                className="
+                  mt-1
+                  text-[10px]
+                  text-gray-500
+                  sm:text-[11px]
+                  dark:text-gray-400
+                "
+              >
                 {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
               </p>
             </div>
@@ -175,11 +292,12 @@ const Dashboard = () => {
               title="Delete PDF"
               aria-label="Delete PDF"
               className="
-                ml-3
+                ml-1
                 flex
                 h-8
                 w-8
                 flex-shrink-0
+                cursor-pointer
                 items-center
                 justify-center
                 rounded-lg

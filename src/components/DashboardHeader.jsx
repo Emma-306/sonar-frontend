@@ -5,12 +5,17 @@ const DashboardHeader = () => {
     <header
       className="
         flex
-        h-[72px]
+        h-14
+        w-full
         shrink-0
         items-center
         justify-end
         bg-transparent
-        px-7
+        px-4
+        sm:h-16
+        sm:px-5
+        md:h-[72px]
+        md:px-7
       "
     >
       <ThemeToggle />
