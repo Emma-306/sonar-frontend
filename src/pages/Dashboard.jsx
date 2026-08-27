@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { assets } from "../assets/assets.js";
 import ThemeToggle from "../components/ThemeToggle";
+import useAuthStore from "../stores/authStore.js";
+
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
@@ -10,10 +12,50 @@ const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState("");
 
+  // ==========================================
+  // AUTH STORE
+  // ==========================================
+
+  const user = useAuthStore((state) => state.user);
+  const getCurrentUser = useAuthStore(
+    (state) => state.getCurrentUser
+  );
+  const isLoading = useAuthStore(
+    (state) => state.isLoading
+  );
+
+  // ==========================================
+  // GET CURRENT USER
+  // ==========================================
+
+  useEffect(() => {
+    if (!user) {
+      getCurrentUser();
+    }
+  }, [user, getCurrentUser]);
+
+  // ==========================================
+  // GET DISPLAY NAME FROM DATABASE
+  // ==========================================
+
+  const displayName =
+    user?.onboarding?.displayName ||
+    user?.name ||
+    "User";
+
+  // ==========================================
+  // BROWSE FILES
+  // ==========================================
+
   const handleBrowseClick = () => {
     if (selectedFile) return;
+
     fileInputRef.current?.click();
   };
+
+  // ==========================================
+  // HANDLE FILE CHANGE
+  // ==========================================
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
@@ -29,14 +71,21 @@ const Dashboard = () => {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("File is too large. Please select a PDF smaller than 25MB.");
+      setError(
+        "File is too large. Please select a PDF smaller than 25MB."
+      );
       event.target.value = "";
       return;
     }
 
     setSelectedFile(file);
+
     console.log("Selected file:", file);
   };
+
+  // ==========================================
+  // DELETE FILE
+  // ==========================================
 
   const handleDeleteFile = () => {
     setSelectedFile(null);
@@ -46,6 +95,10 @@ const Dashboard = () => {
       fileInputRef.current.value = "";
     }
   };
+
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
     <div
@@ -59,25 +112,45 @@ const Dashboard = () => {
         justify-center
         px-4
         py-8
+
         sm:px-6
         sm:py-10
+
         md:px-7
         md:py-12
       "
     >
-      {/* Theme Toggle - Top Right */}
-      <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-5">
+      {/* ==========================================
+          THEME TOGGLE
+      ========================================== */}
+
+      <div
+        className="
+          absolute
+          right-4
+          top-4
+          z-10
+
+          sm:right-6
+          sm:top-5
+        "
+      >
         <ThemeToggle />
       </div>
 
-      {/* Sonar Orb */}
+      {/* ==========================================
+          SONAR ORB
+      ========================================== */}
+
       <div
         className="
           mb-6
           flex
           items-center
           justify-center
+
           sm:mb-7
+
           md:mb-8
         "
       >
@@ -90,15 +163,20 @@ const Dashboard = () => {
           aria-label="Sonar"
           className="
             h-auto
-            object-contain
             w-[160px]
-sm:w-[180px]
-md:w-[200px]
+            object-contain
+
+            sm:w-[180px]
+
+            md:w-[200px]
           "
         />
       </div>
 
-      {/* Welcome text */}
+      {/* ==========================================
+          WELCOME TEXT
+      ========================================== */}
+
       <h1
         className="
           mb-2
@@ -107,11 +185,15 @@ md:w-[200px]
           font-semibold
           tracking-tight
           text-gray-900
+
           sm:text-[28px]
+
           dark:text-white
         "
       >
-        Welcome, Alex
+        {isLoading && !user
+          ? "Welcome..."
+          : `Welcome, ${displayName}`}
       </h1>
 
       <p
@@ -121,15 +203,20 @@ md:w-[200px]
           text-center
           text-[13px]
           text-gray-500
+
           sm:mb-10
           sm:text-[14px]
+
           dark:text-gray-400
         "
       >
         What PDF would you like to listen to today?
       </p>
 
-      {/* Upload area */}
+      {/* ==========================================
+          UPLOAD AREA
+      ========================================== */}
+
       <div
         className="
           flex
@@ -147,16 +234,22 @@ md:w-[200px]
           py-8
           transition
           hover:border-gray-400
+
           sm:px-6
           sm:py-9
+
           md:px-8
           md:py-10
+
           dark:border-[#333]
           dark:bg-[#0c0c0c]
           dark:hover:border-[#444]
         "
       >
-        {/* Cloud upload icon */}
+        {/* ==========================================
+            CLOUD UPLOAD ICON
+        ========================================== */}
+
         <div
           className="
             mb-4
@@ -167,8 +260,10 @@ md:w-[200px]
             justify-center
             rounded-full
             bg-blue-50
+
             sm:h-11
             sm:w-11
+
             dark:bg-blue-500/10
           "
         >
@@ -187,7 +282,10 @@ md:w-[200px]
           </svg>
         </div>
 
-        {/* Upload heading */}
+        {/* ==========================================
+            UPLOAD HEADING
+        ========================================== */}
+
         <p
           className="
             mb-1
@@ -195,21 +293,28 @@ md:w-[200px]
             text-[13px]
             font-medium
             text-gray-800
+
             sm:text-[14px]
+
             dark:text-gray-100
           "
         >
           Upload a PDF to get started
         </p>
 
-        {/* Browse text */}
+        {/* ==========================================
+            BROWSE TEXT
+        ========================================== */}
+
         <p
           className="
             mb-3
             text-center
             text-[12px]
             text-gray-500
+
             sm:text-[13px]
+
             dark:text-gray-400
           "
         >
@@ -234,7 +339,10 @@ md:w-[200px]
           )}
         </p>
 
-        {/* Hidden file input */}
+        {/* ==========================================
+            HIDDEN FILE INPUT
+        ========================================== */}
+
         <input
           ref={fileInputRef}
           type="file"
@@ -244,19 +352,26 @@ md:w-[200px]
           disabled={!!selectedFile}
         />
 
-        {/* File size information */}
+        {/* ==========================================
+            FILE SIZE INFORMATION
+        ========================================== */}
+
         <p
           className="
             text-center
             text-[10px]
             text-gray-400
+
             sm:text-[11px]
           "
         >
           Supports .pdf files up to 25MB.
         </p>
 
-        {/* Error message */}
+        {/* ==========================================
+            ERROR MESSAGE
+        ========================================== */}
+
         {error && (
           <p
             className="
@@ -266,6 +381,7 @@ md:w-[200px]
               text-[11px]
               font-medium
               text-red-500
+
               sm:text-[12px]
             "
           >
@@ -273,7 +389,10 @@ md:w-[200px]
           </p>
         )}
 
-        {/* Selected file */}
+        {/* ==========================================
+            SELECTED FILE
+        ========================================== */}
+
         {selectedFile && !error && (
           <div
             className="
@@ -288,7 +407,9 @@ md:w-[200px]
               bg-gray-50
               px-3
               py-3
+
               sm:px-4
+
               dark:bg-[#151515]
             "
           >
@@ -299,7 +420,9 @@ md:w-[200px]
                   text-[12px]
                   font-medium
                   text-gray-800
+
                   sm:text-[13px]
+
                   dark:text-gray-100
                 "
                 title={selectedFile.name}
@@ -312,13 +435,19 @@ md:w-[200px]
                   mt-1
                   text-[10px]
                   text-gray-500
+
                   sm:text-[11px]
+
                   dark:text-gray-400
                 "
               >
                 {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
               </p>
             </div>
+
+            {/* ==========================================
+                DELETE BUTTON
+            ========================================== */}
 
             <button
               type="button"
@@ -339,6 +468,7 @@ md:w-[200px]
                 transition
                 hover:bg-red-50
                 hover:text-red-500
+
                 dark:hover:bg-red-500/10
               "
             >

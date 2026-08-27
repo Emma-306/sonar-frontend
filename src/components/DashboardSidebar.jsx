@@ -1,7 +1,11 @@
+import { useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { assets } from "../assets/assets.js";
+import useAuthStore from "../stores/authStore.js";
 
-const pinnedFiles = [{ name: "Meeting_Notes.pdf", path: "#" }];
+const pinnedFiles = [
+  { name: "Meeting_Notes.pdf", path: "#" },
+];
 
 const recentFiles = [
   { name: "Project_Notes.pdf", path: "#" },
@@ -10,9 +14,47 @@ const recentFiles = [
 ];
 
 const DashboardSidebar = ({ isOpen = false, onClose }) => {
+  // ==========================================
+  // AUTH STORE
+  // ==========================================
+
+  const user = useAuthStore((state) => state.user);
+
+  const getCurrentUser = useAuthStore(
+    (state) => state.getCurrentUser
+  );
+
+  // ==========================================
+  // GET CURRENT USER
+  // ==========================================
+
+  useEffect(() => {
+    if (!user) {
+      getCurrentUser();
+    }
+  }, [user, getCurrentUser]);
+
+  // ==========================================
+  // USER INFORMATION
+  // ==========================================
+
+  // Use the TOP-LEVEL name from MongoDB
+  // Example: "Emmanuel Johnny"
+  const displayName = user?.name || "User";
+
+  // Email from MongoDB
+  // Example: "esquare.jay@gmail.com"
+  const email = user?.email || "";
+
+  // Google profile picture from MongoDB
+  const profilePicture = user?.profilePicture || null;
+
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* ==========================================
+          MOBILE BACKDROP
+      ========================================== */}
+
       {isOpen && (
         <button
           type="button"
@@ -29,7 +71,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* ==========================================
+          SIDEBAR
+      ========================================== */}
+
       <aside
         className={`
           fixed
@@ -67,7 +112,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           lg:shrink-0
         `}
       >
-        {/* LOGO + CLOSE */}
+        {/* ==========================================
+            LOGO + CLOSE
+        ========================================== */}
+
         <div
           className="
             flex
@@ -80,21 +128,36 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           "
         >
           {/* Logo */}
+
           <div className="flex min-w-0 items-center">
             <img
               src={assets.brandLogo}
               alt="Sonar Logo"
-              className="h-6 w-auto max-w-[130px] object-contain dark:hidden"
+              className="
+                h-6
+                w-auto
+                max-w-[130px]
+                object-contain
+                dark:hidden
+              "
             />
 
             <img
               src={assets.brandLogo2}
               alt="Sonar Logo"
-              className="hidden h-6 w-auto max-w-[130px] object-contain dark:block"
+              className="
+                hidden
+                h-6
+                w-auto
+                max-w-[130px]
+                object-contain
+                dark:block
+              "
             />
           </div>
 
           {/* Close button - mobile only */}
+
           <button
             type="button"
             onClick={onClose}
@@ -112,8 +175,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               hover:bg-gray-100
               hover:text-gray-800
               active:scale-95
+
               dark:hover:bg-[#1a1a1a]
               dark:hover:text-gray-200
+
               lg:hidden
             "
             aria-label="Close sidebar"
@@ -133,7 +198,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           </button>
         </div>
 
-        {/* SEARCH */}
+        {/* ==========================================
+            SEARCH
+        ========================================== */}
+
         <div className="shrink-0 px-3 pb-4 sm:px-4">
           <div className="relative">
             <svg
@@ -192,7 +260,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           </div>
         </div>
 
-        {/* NEW FILE */}
+        {/* ==========================================
+            NEW FILE
+        ========================================== */}
+
         <div className="shrink-0 px-3 pb-5 sm:px-4">
           <button
             type="button"
@@ -218,14 +289,32 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               dark:hover:text-gray-200
             "
           >
-            <span className="text-[16px] leading-none">+</span>
+            <span className="text-[16px] leading-none">
+              +
+            </span>
+
             NEW FILE
           </button>
         </div>
 
-        {/* FILES */}
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2.5 sm:px-3">
-          {/* PINNED */}
+        {/* ==========================================
+            FILES
+        ========================================== */}
+
+        <div
+          className="
+            min-h-0
+            flex-1
+            overflow-y-auto
+            overflow-x-hidden
+            px-2.5
+            sm:px-3
+          "
+        >
+          {/* ==========================================
+              PINNED
+          ========================================== */}
+
           <div className="mb-5">
             <p
               className="
@@ -269,7 +358,12 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   "
                 >
                   <svg
-                    className="h-3.5 w-3.5 shrink-0 text-gray-400"
+                    className="
+                      h-3.5
+                      w-3.5
+                      shrink-0
+                      text-gray-400
+                    "
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -281,13 +375,18 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                     <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z" />
                   </svg>
 
-                  <span className="min-w-0 truncate">{file.name}</span>
+                  <span className="min-w-0 truncate">
+                    {file.name}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* RECENTS */}
+          {/* ==========================================
+              RECENTS
+          ========================================== */}
+
           <div>
             <p
               className="
@@ -331,7 +430,12 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   "
                 >
                   <svg
-                    className="h-3.5 w-3.5 shrink-0 text-gray-400"
+                    className="
+                      h-3.5
+                      w-3.5
+                      shrink-0
+                      text-gray-400
+                    "
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -346,50 +450,61 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                     <path d="M10 9H8" />
                   </svg>
 
-                  <span className="min-w-0 truncate">{file.name}</span>
+                  <span className="min-w-0 truncate">
+                    {file.name}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* BOTTOM */}
+        {/* ==========================================
+            BOTTOM
+        ========================================== */}
+
         <div
           className="
             shrink-0
             border-t
             border-gray-200
             p-3
+
             dark:border-[#1d1d1d]
+
             sm:p-3.5
           "
         >
-          {/* Upgrade */}
+          {/* ==========================================
+              UPGRADE
+          ========================================== */}
+
           <NavLink
             to="/plan-comparison"
             onClick={onClose}
             className="
-    mb-3
-    flex
-    h-10
-    w-full
-    cursor-pointer
-    items-center
-    justify-center
-    gap-2
-    rounded-lg
-    bg-gradient-to-r
-    from-[#3B82F6]
-    to-[#9333EA]
-    px-2
-    text-[11px]
-    font-medium
-    text-white
-    transition
-    hover:opacity-90
-    active:scale-[0.98]
-    sm:text-[12px]
-  "
+              mb-3
+              flex
+              h-10
+              w-full
+              cursor-pointer
+              items-center
+              justify-center
+              gap-2
+              rounded-lg
+              bg-gradient-to-r
+              from-[#3B82F6]
+              to-[#9333EA]
+              px-2
+              text-[11px]
+              font-medium
+              text-white
+              transition
+              hover:opacity-90
+              active:scale-[0.98]
+
+              sm:text-[12px]
+            "
           >
             <svg
               className="h-3.5 w-3.5 shrink-0"
@@ -402,23 +517,87 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             <span>Upgrade to Pro</span>
           </NavLink>
 
-          {/* User */}
-          <div className="flex min-w-0 items-center gap-2.5 px-1 py-1 sm:gap-3">
-            <img
-              src="https://i.pravatar.cc/150?img=12"
-              alt="Alexander Chen"
-              className="h-8 w-8 shrink-0 rounded-full object-cover"
-            />
+          {/* ==========================================
+              USER
+          ========================================== */}
+
+          <div
+            className="
+              flex
+              min-w-0
+              items-center
+              gap-2.5
+              px-1
+              py-1
+
+              sm:gap-3
+            "
+          >
+            {/* PROFILE PICTURE */}
+
+            {profilePicture ? (
+              <img
+                src={profilePicture}
+                alt={displayName}
+                className="
+                  h-8
+                  w-8
+                  shrink-0
+                  rounded-full
+                  object-cover
+                "
+              />
+            ) : (
+              <div
+                className="
+                  flex
+                  h-8
+                  w-8
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-purple-100
+                  text-[12px]
+                  font-semibold
+                  text-purple-600
+
+                  dark:bg-purple-500/20
+                  dark:text-purple-400
+                "
+              >
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+
+            {/* USER NAME + EMAIL */}
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-medium text-gray-900 dark:text-gray-100">
-                Alexander Chen
+              <p
+                className="
+                  truncate
+                  text-[12px]
+                  font-medium
+                  text-gray-900
+
+                  dark:text-gray-100
+                "
+              >
+                {displayName}
               </p>
 
-              <p className="truncate text-[10px] text-gray-400">
-                alex@sonar.ai
+              <p
+                className="
+                  truncate
+                  text-[10px]
+                  text-gray-400
+                "
+              >
+                {email}
               </p>
             </div>
+
+            {/* SETTINGS */}
 
             <NavLink
               to="/dashboard/settings"
@@ -453,6 +632,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 strokeLinejoin="round"
               >
                 <circle cx="12" cy="12" r="3" />
+
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.01 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </NavLink>

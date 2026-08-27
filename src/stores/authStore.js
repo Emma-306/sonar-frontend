@@ -152,6 +152,76 @@ const useAuthStore = create((set) => ({
       };
     }
   },
+  getCurrentUser: async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // No token = not logged in
+      if (!token) {
+        return {
+          success: false,
+          message: "No authentication token",
+        };
+      }
+
+      set({
+        isLoading: true,
+        error: null,
+      });
+
+      console.log("Fetching current user...");
+
+      const response = await axios.get(`${API_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("Current user:", response.data);
+
+      const user = response.data.user;
+
+      // Update Zustand
+      set({
+        user,
+        token,
+        isLoading: false,
+        error: null,
+      });
+
+      return {
+        success: true,
+        user,
+      };
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "Failed to get current user";
+
+      console.error("Get current user failed:", error);
+
+      // Token is invalid/expired
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem("token");
+
+        set({
+          user: null,
+          token: null,
+          isLoading: false,
+          error: message,
+        });
+      } else {
+        set({
+          isLoading: false,
+          error: message,
+        });
+      }
+
+      return {
+        success: false,
+        message,
+      };
+    }
+  },
 }));
 
 export default useAuthStore;
