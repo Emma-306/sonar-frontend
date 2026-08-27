@@ -1,6 +1,13 @@
 import { assets } from "../assets/assets.js";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
+  const navigate = useNavigate();
+
+  const handleGoogleLogin = () => {
+    navigate("/dashboard");
+  };
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black">
       {/* ================= VIDEO BACKGROUND ================= */}
@@ -20,7 +27,6 @@ const Login = () => {
 
       {/* ================= LOGIN CONTAINER ================= */}
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
-        
         {/* ================= LOGIN CARD ================= */}
         <div
           className="
@@ -56,7 +62,6 @@ const Login = () => {
                 sm:w-12
               "
             >
-              {/* Sound Wave Icon */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -113,6 +118,7 @@ const Login = () => {
           {/* ================= GOOGLE SIGN-IN ================= */}
           <button
             type="button"
+            onClick={handleGoogleLogin}
             className="
               flex
               w-full
