@@ -4,11 +4,13 @@ import Login from "./pages/Login";
 import StepOne from "./pages/onboarding/StepOne";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
+import PlanComparison from "./pages/PlanComparison";
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
+
         {/* Login */}
         <Route path="/" element={<Login />} />
 
@@ -17,11 +19,20 @@ const App = () => {
           path="/onboarding"
           element={<StepOne />}
         />
-         <Route path="/dashboard" element={<DashboardLayout />}>
 
+        {/* Dashboard */}
+        <Route
+          path="/dashboard"
+          element={<DashboardLayout />}
+        >
           <Route index element={<Dashboard />} />
-
         </Route>
+
+        {/* Plan Comparison */}
+        <Route
+          path="/plan-comparison"
+          element={<PlanComparison />}
+        />
 
       </Routes>
     </BrowserRouter>
