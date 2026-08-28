@@ -1,80 +1,573 @@
-import React, { useEffect, useRef, useState } from "react";
-import { assets } from "../assets/assets.js";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import { useSearchParams } from "react-router-dom";
+
 import ThemeToggle from "../components/ThemeToggle.jsx";
+import useAuthStore from "../stores/authStore.js";
+import { assets } from "../assets/assets.js";
 
 const Reading = () => {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
 
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [searchParams] = useSearchParams();
+
+  const fileId = searchParams.get("fileId");
+
+  // ============================================================
+  // ZUSTAND
+  // ============================================================
+
+  const getFile = useAuthStore((state) => state.getFile);
+
+  const getUserVoice = useAuthStore(
+    (state) => state.getUserVoice
+  );
+
+  const generateUserSpeech = useAuthStore(
+    (state) => state.generateUserSpeech
+  );
+
+  // ============================================================
+  // STATE
+  // ============================================================
+
+  const [file, setFile] = useState(null);
+  const [voice, setVoice] = useState(null);
+
+  const [isLoadingFile, setIsLoadingFile] =
+    useState(true);
+
+  const [isLoadingVoice, setIsLoadingVoice] =
+    useState(true);
+
+  const [fileError, setFileError] = useState(null);
+  const [voiceError, setVoiceError] = useState(null);
+
+  const [audioUrl, setAudioUrl] = useState(null);
+
+  const [isGeneratingAudio, setIsGeneratingAudio] =
+    useState(false);
+
+  const [audioError, setAudioError] = useState(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const [speed, setSpeed] = useState(1);
-  const [currentTime, setCurrentTime] = useState(154);
-  const [duration, setDuration] = useState(728);
+
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const [duration, setDuration] = useState(0);
+
+  const [volume, setVolume] = useState(0.74);
+
+  const [isMuted, setIsMuted] = useState(false);
+
+  // ============================================================
+  // RESOLVE AUDIO URL
+  // ============================================================
+
+  const resolveAudioUrl = (returnedAudioUrl) => {
+    if (!returnedAudioUrl) {
+      return null;
+    }
+
+    const cleanUrl = String(returnedAudioUrl).trim();
+
+    // Cloudinary URL / any external URL
+    if (
+      cleanUrl.startsWith("http://") ||
+      cleanUrl.startsWith("https://") ||
+      cleanUrl.startsWith("blob:")
+    ) {
+      return cleanUrl;
+    }
+
+    // Fallback for old backend-relative URLs
+    const backendUrl = import.meta.env.DEV
+      ? "http://localhost:5000"
+      : "https://sonar-backend-s3rs.onrender.com";
+
+    const normalizedPath = cleanUrl.startsWith("/")
+      ? cleanUrl
+      : `/${cleanUrl}`;
+
+    return `${backendUrl}${normalizedPath}`;
+  };
+
+  // ============================================================
+  // LOAD FILE + USER VOICE
+  // ============================================================
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchReadingData = async () => {
+      if (!fileId) {
+        setFileError("No file ID was provided.");
+        setIsLoadingFile(false);
+        setIsLoadingVoice(false);
+        return;
+      }
+
+      setIsLoadingFile(true);
+      setIsLoadingVoice(true);
+
+      setFileError(null);
+      setVoiceError(null);
+
+      try {
+        const [fileResult, voiceResult] =
+          await Promise.all([
+            getFile(fileId),
+            getUserVoice(),
+          ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        // ======================================================
+        // FILE
+        // ======================================================
+
+        if (
+          fileResult?.success &&
+          fileResult?.file
+        ) {
+          setFile(fileResult.file);
+        } else {
+          setFileError(
+            fileResult?.message ||
+              "Failed to load the document."
+          );
+        }
+
+        // ======================================================
+        // VOICE
+        // ======================================================
+
+        if (
+          voiceResult?.success &&
+          voiceResult?.voice
+        ) {
+          setVoice(voiceResult.voice);
+        } else {
+          setVoiceError(
+            voiceResult?.message ||
+              "Failed to load your selected voice."
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load reading data:",
+          error
+        );
+
+        if (isMounted) {
+          setFileError(
+            "Failed to load the document."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingFile(false);
+          setIsLoadingVoice(false);
+        }
+      }
+    };
+
+    fetchReadingData();
+
+    return () => {
+      isMounted = false;
+    };
+
+    // Intentionally only triggered by fileId.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileId]);
+
+  // ============================================================
+  // GENERATE SPEECH
+  // ============================================================
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const generateAudio = async () => {
+      if (!file?.extractedText) {
+        return;
+      }
+
+      if (!fileId) {
+        setAudioError(
+          "No file ID is available for speech generation."
+        );
+        return;
+      }
+
+      // ========================================================
+      // RESET OLD AUDIO
+      // ========================================================
+
+      setAudioUrl(null);
+      setAudioError(null);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+      setIsGeneratingAudio(true);
+
+      try {
+        console.log(
+          "Generating speech for file:",
+          fileId
+        );
+
+        const result =
+          await generateUserSpeech(
+            file.extractedText,
+            fileId
+          );
+
+        if (!isMounted) {
+          return;
+        }
+
+        console.log(
+          "Speech generation result:",
+          result
+        );
+
+        // ======================================================
+        // GENERATION FAILED
+        // ======================================================
+
+        if (!result?.success) {
+          setAudioError(
+            result?.message ||
+              "Failed to generate speech."
+          );
+
+          return;
+        }
+
+        // ======================================================
+        // CHECK AUDIO URL
+        // ======================================================
+
+        if (!result.audioUrl) {
+          setAudioError(
+            "The backend did not return an audio URL."
+          );
+
+          console.error(
+            "Backend speech response did not contain audioUrl:",
+            result
+          );
+
+          return;
+        }
+
+        // ======================================================
+        // RESOLVE AUDIO URL
+        // ======================================================
+
+        const fullAudioUrl =
+          resolveAudioUrl(result.audioUrl);
+
+        console.log(
+          "Audio URL:",
+          fullAudioUrl
+        );
+
+        setAudioUrl(fullAudioUrl);
+      } catch (error) {
+        console.error(
+          "Speech generation failed:",
+          error
+        );
+
+        if (isMounted) {
+          setAudioError(
+            error?.response?.data?.message ||
+              error?.message ||
+              "Failed to generate speech."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsGeneratingAudio(false);
+        }
+      }
+    };
+
+    generateAudio();
+
+    return () => {
+      isMounted = false;
+    };
+
+    // Intentionally exclude Zustand action.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file?.extractedText, fileId]);
+
+  // ============================================================
+  // VOICE DISPLAY NAME
+  // ============================================================
+
+  const getVoiceDisplayName = () => {
+    if (!voice) {
+      return "Loading...";
+    }
+
+    const accent = voice.accent
+      ? voice.accent.charAt(0).toUpperCase() +
+        voice.accent.slice(1)
+      : "";
+
+    const gender = voice.gender
+      ? voice.gender.charAt(0).toUpperCase() +
+        voice.gender.slice(1)
+      : "";
+
+    if (accent && gender) {
+      return `${gender} (${accent})`;
+    }
+
+    if (accent) {
+      return accent;
+    }
+
+    return "Selected Voice";
+  };
+
+  // ============================================================
+  // LOAD AUDIO WHEN URL CHANGES
+  // ============================================================
+
+  useEffect(() => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (!audioUrl) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+
+      return;
+    }
+
+    console.log("Loading audio:", audioUrl);
+
+    audio.pause();
+
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+
+    audio.src = audioUrl;
+    audio.playbackRate = speed;
+    audio.volume = isMuted ? 0 : volume;
+
+    audio.load();
+
+    return () => {
+      audio.pause();
+    };
+  }, [audioUrl]);
+
+  // ============================================================
+  // AUDIO PLAY
+  // ============================================================
+
+  const handleAudioPlay = () => {
+    console.log("Audio PLAY event");
+
+    setIsPlaying(true);
+
+    if (videoRef.current) {
+      videoRef.current
+        .play()
+        .catch(() => {});
+    }
+  };
+
+  // ============================================================
+  // AUDIO PAUSE
+  // ============================================================
+
+  const handleAudioPause = () => {
+    console.log("Audio PAUSE event");
+
+    setIsPlaying(false);
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+  };
+
+  // ============================================================
+  // AUDIO TIME UPDATE
+  // ============================================================
+
+  const handleAudioTimeUpdate = () => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    setCurrentTime(audio.currentTime);
+  };
+
+  // ============================================================
+  // AUDIO METADATA
+  // ============================================================
+
+  const handleLoadedMetadata = () => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    console.log("Audio metadata loaded");
+    console.log("Audio duration:", audio.duration);
+
+    if (
+      Number.isFinite(audio.duration) &&
+      audio.duration > 0
+    ) {
+      setDuration(audio.duration);
+    }
+  };
+
+  // ============================================================
+  // CAN PLAY
+  // ============================================================
+
+  const handleCanPlay = () => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    console.log("Audio can play");
+
+    if (
+      Number.isFinite(audio.duration) &&
+      audio.duration > 0
+    ) {
+      setDuration(audio.duration);
+    }
+  };
+
+  // ============================================================
+  // DURATION CHANGE
+  // ============================================================
+
+  const handleDurationChange = () => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (
+      Number.isFinite(audio.duration) &&
+      audio.duration > 0
+    ) {
+      setDuration(audio.duration);
+    }
+  };
+
+  // ============================================================
+  // AUDIO ENDED
+  // ============================================================
+
+  const handleAudioEnded = () => {
+    console.log("Audio ended");
+
+    setIsPlaying(false);
+    setCurrentTime(0);
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+
+    const audio = audioRef.current;
+
+    if (audio) {
+      audio.currentTime = 0;
+    }
+  };
+
+  // ============================================================
+  // AUDIO ERROR
+  // ============================================================
+
+  const handleAudioError = () => {
+    const audio = audioRef.current;
+
+    console.error("Audio could not be loaded.");
+
+    if (audio?.error) {
+      console.error(
+        "Audio error code:",
+        audio.error.code
+      );
+
+      console.error(
+        "Audio error message:",
+        audio.error.message
+      );
+    }
+
+    setIsPlaying(false);
+
+    if (audioUrl) {
+      setAudioError(
+        "The generated audio could not be loaded. Check that the Cloudinary audio URL is valid and publicly accessible."
+      );
+    }
+  };
 
   // ============================================================
   // PLAYBACK SPEED
   // ============================================================
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = speed;
+    const audio = audioRef.current;
+
+    if (audio) {
+      audio.playbackRate = speed;
     }
   }, [speed]);
 
   // ============================================================
-  // AUDIO EVENTS
+  // VOLUME
   // ============================================================
 
   useEffect(() => {
     const audio = audioRef.current;
 
-    if (!audio) return;
-
-    const handlePlay = () => {
-      setIsPlaying(true);
-
-      videoRef.current?.play().catch(() => {});
-    };
-
-    const handlePause = () => {
-      setIsPlaying(false);
-
-      videoRef.current?.pause();
-    };
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
-
-    const handleLoadedMetadata = () => {
-      if (Number.isFinite(audio.duration)) {
-        setDuration(audio.duration);
-      }
-    };
-
-    const handleEnded = () => {
-      setIsPlaying(false);
-
-      videoRef.current?.pause();
-    };
-
-    audio.addEventListener("play", handlePlay);
-    audio.addEventListener("pause", handlePause);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.removeEventListener("play", handlePlay);
-      audio.removeEventListener("pause", handlePause);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener(
-        "loadedmetadata",
-        handleLoadedMetadata
-      );
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, []);
+    if (audio) {
+      audio.volume = isMuted ? 0 : volume;
+    }
+  }, [volume, isMuted]);
 
   // ============================================================
   // PLAY / PAUSE
@@ -83,33 +576,73 @@ const Reading = () => {
   const togglePlay = async () => {
     const audio = audioRef.current;
 
-    if (!audio) return;
+    if (!audio) {
+      console.error(
+        "Audio element does not exist."
+      );
+      return;
+    }
+
+    if (!audioUrl) {
+      console.error(
+        "No audio URL available."
+      );
+      return;
+    }
+
+    if (isGeneratingAudio) {
+      return;
+    }
 
     try {
       if (audio.paused) {
+        console.log(
+          "Attempting to play audio..."
+        );
+
         await audio.play();
-
-        videoRef.current?.play().catch(() => {});
       } else {
-        audio.pause();
+        console.log(
+          "Pausing audio..."
+        );
 
-        videoRef.current?.pause();
+        audio.pause();
       }
     } catch (error) {
-      console.error("Audio playback error:", error);
+      console.error(
+        "Audio playback error:",
+        error
+      );
+
+      setAudioError(
+        "Unable to play the generated audio."
+      );
     }
   };
 
   // ============================================================
-  // SPEED
+  // CHANGE SPEED
   // ============================================================
 
   const changeSpeed = () => {
-    const speeds = [0.75, 1, 1.25, 1.5, 2];
+    const speeds = [
+      0.75,
+      1,
+      1.25,
+      1.5,
+      2,
+    ];
 
-    const index = speeds.indexOf(speed);
+    const currentIndex =
+      speeds.indexOf(speed);
 
-    setSpeed(speeds[(index + 1) % speeds.length]);
+    const nextIndex =
+      currentIndex === -1
+        ? 1
+        : (currentIndex + 1) %
+          speeds.length;
+
+    setSpeed(speeds[nextIndex]);
   };
 
   // ============================================================
@@ -117,14 +650,22 @@ const Reading = () => {
   // ============================================================
 
   const formatTime = (time) => {
-    if (!Number.isFinite(time)) {
+    if (
+      !Number.isFinite(time) ||
+      time < 0
+    ) {
       return "0:00";
     }
 
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
+    const minutes =
+      Math.floor(time / 60);
 
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    const seconds =
+      Math.floor(time % 60);
+
+    return `${minutes}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   // ============================================================
@@ -132,11 +673,20 @@ const Reading = () => {
   // ============================================================
 
   const handleSeek = (e) => {
-    const newTime = Number(e.target.value);
+    const newTime =
+      Number(e.target.value);
 
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
     }
+
+    if (!Number.isFinite(newTime)) {
+      return;
+    }
+
+    audio.currentTime = newTime;
 
     setCurrentTime(newTime);
   };
@@ -146,11 +696,15 @@ const Reading = () => {
   // ============================================================
 
   const skipBackward = () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
 
-    audioRef.current.currentTime = Math.max(
+    if (!audio || !audioUrl) {
+      return;
+    }
+
+    audio.currentTime = Math.max(
       0,
-      audioRef.current.currentTime - 10
+      audio.currentTime - 10
     );
   };
 
@@ -159,11 +713,24 @@ const Reading = () => {
   // ============================================================
 
   const skipForward = () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
 
-    audioRef.current.currentTime = Math.min(
-      duration,
-      audioRef.current.currentTime + 10
+    if (!audio || !audioUrl) {
+      return;
+    }
+
+    const audioDuration =
+      Number.isFinite(audio.duration)
+        ? audio.duration
+        : duration;
+
+    if (!audioDuration) {
+      return;
+    }
+
+    audio.currentTime = Math.min(
+      audioDuration,
+      audio.currentTime + 10
     );
   };
 
@@ -172,18 +739,54 @@ const Reading = () => {
   // ============================================================
 
   const restartAudio = async () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
 
-    audioRef.current.currentTime = 0;
+    if (!audio || !audioUrl) {
+      return;
+    }
+
+    audio.currentTime = 0;
 
     try {
-      await audioRef.current.play();
-
-      videoRef.current?.play().catch(() => {});
+      await audio.play();
     } catch (error) {
-      console.error("Audio playback error:", error);
+      console.error(
+        "Restart playback error:",
+        error
+      );
     }
   };
+
+  // ============================================================
+  // VOLUME CHANGE
+  // ============================================================
+
+  const handleVolumeChange = (e) => {
+    const newVolume =
+      Number(e.target.value);
+
+    setVolume(newVolume);
+
+    if (newVolume > 0) {
+      setIsMuted(false);
+    }
+  };
+
+  // ============================================================
+  // MUTE
+  // ============================================================
+
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
+  };
+
+  // ============================================================
+  // VOLUME PERCENTAGE
+  // ============================================================
+
+  const volumePercentage = isMuted
+    ? 0
+    : volume * 100;
 
   // ============================================================
   // PROGRESS
@@ -191,226 +794,159 @@ const Reading = () => {
 
   const progress =
     duration > 0
-      ? Math.min((currentTime / duration) * 100, 100)
+      ? Math.min(
+          Math.max(
+            (currentTime / duration) * 100,
+            0
+          ),
+          100
+        )
       : 0;
 
-  return (
-    <div
-      className="
-        relative
-        flex
-        h-screen
-        w-full
-        flex-1
-        flex-col
-        overflow-hidden
-        bg-[#F8F9FB]
-        dark:bg-[#111113]
-      "
-    >
-      {/* ======================================================
-          THEME TOGGLE
-      ====================================================== */}
+  // ============================================================
+  // LOADING
+  // ============================================================
 
-      <div className="absolute right-8 top-5 z-50">
+  if (
+    isLoadingFile ||
+    isLoadingVoice
+  ) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#F8F9FB] px-6 dark:bg-[#111113]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#7145FF]/20 border-t-[#7145FF]" />
+
+          <p className="text-sm text-[#666] dark:text-[#AAA]">
+            Loading document...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // FILE ERROR
+  // ============================================================
+
+  if (fileError) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#F8F9FB] px-6 dark:bg-[#111113]">
+        <div className="w-full max-w-md rounded-[18px] bg-white p-8 text-center shadow-sm dark:bg-[#1C1C1E]">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-500 dark:bg-red-500/10">
+            !
+          </div>
+
+          <h2 className="mb-2 text-lg font-semibold text-[#171717] dark:text-white">
+            Unable to load document
+          </h2>
+
+          <p className="text-sm text-[#777] dark:text-[#AAA]">
+            {fileError}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // MAIN
+  // ============================================================
+
+  return (
+    <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[#F8F9FB] dark:bg-[#111113]">
+
+      {/* THEME TOGGLE */}
+
+      <div className="absolute right-4 top-4 z-50 sm:right-6 sm:top-5 md:right-8">
         <ThemeToggle />
       </div>
 
-      {/* ======================================================
-          MAIN READING AREA
-      ====================================================== */}
+      {/* MAIN */}
 
-      <main
-        className="
-          flex
-          min-h-0
-          flex-1
-          items-stretch
-          justify-center
-          overflow-hidden
-          px-8
-          pb-[105px]
-          pt-[55px]
-          xl:px-10
-        "
-      >
-        {/* ====================================================
-            MAIN CONTENT WRAPPER
+      <main className="flex min-h-0 w-full flex-1 justify-center overflow-hidden px-3 pb-[95px] pt-[65px] sm:px-5 sm:pb-[100px] md:px-6 lg:px-8 lg:pb-[105px] lg:pt-[55px] xl:px-10">
+        <div className="flex min-h-0 w-full max-w-[1250px] flex-1 flex-col gap-4 sm:gap-5 md:gap-6 lg:flex-row lg:gap-7">
 
-            flex-1 makes this take all remaining vertical space.
-        ==================================================== */}
+          {/* ARTICLE */}
 
-        <div
-          className="
-            flex
-            min-h-0
-            w-full
-            max-w-[1250px]
-            flex-1
-            flex-col
-            gap-7
-            lg:flex-row
-          "
-        >
-          {/* ==================================================
-              ARTICLE / TEXT CARD
-          ================================================== */}
+          <article className="min-h-0 min-w-0 flex-1 overflow-y-auto rounded-[16px] bg-[#F7F7F7] px-5 py-6 sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 md:py-8 lg:px-9 lg:py-8 xl:px-10 xl:py-9 dark:bg-[#1C1C1E]">
 
-          <article
-            className="
-              min-h-0
-              min-w-0
-              flex-1
-              overflow-y-auto
-              rounded-[18px]
-              bg-[#F7F7F7]
-              px-9
-              py-8
-              dark:bg-[#1C1C1E]
-              xl:px-10
-              xl:py-9
-            "
-          >
-            <h1
-              className="
-                mb-6
-                max-w-[720px]
-                text-[25px]
-                font-bold
-                leading-[1.15]
-                tracking-[-0.5px]
-                text-[#111111]
-                dark:text-white
-              "
-            >
-              The Impact of Artificial Intelligence on Modern
-              Healthcare
+            <h1 className="mb-5 max-w-[900px] break-words pr-8 text-[21px] font-bold leading-[1.2] tracking-[-0.4px] text-[#111111] sm:text-[23px] md:text-[25px] dark:text-white">
+              {file?.originalName ||
+                "Untitled Document"}
             </h1>
 
-            <div
-              className="
-                max-w-[760px]
-                space-y-[17px]
-                text-[15px]
-                leading-[1.62]
-                text-[#5C5C5C]
-                dark:text-[#D0D0D0]
-              "
-            >
-              <p>
-                Artificial Intelligence (AI) has emerged as an
-                exceptionally powerful tool in contemporary clinical
-                settings, fundamentally altering diagnosis, treatment
-                protocols, and workflow automation. From automated
-                billing pipelines to sophisticated diagnostic imaging
-                assistants, machines now perform tasks that once
-                required years of specialized medical training.
-              </p>
-
-              <p>
-                Perhaps the most significant breakthrough lies in deep
-                learning systems trained on millions of clinical
-                records.{" "}
-                <span className="font-semibold text-[#873BFF]">
-                  These models can identify subtle patterns in
-                  multi-modal datasets—such as medical images, genome
-                  sequences, and laboratory histories—to predict
-                  patient outcomes before symptoms even manifest.
-                </span>{" "}
-                Over the next decade, clinical validation studies will
-                determine whether these algorithms can successfully
-                transition from laboratory environments into
-                widespread real-world deployment.
-              </p>
-
-              <p>
-                However, despite these advances, several hurdles
-                prevent immediate widespread clinical adoption.
-                Foremost among these is the challenge of algorithm
-                explainability. Clinicians must understand not just
-                the statistical probability of a diagnostic output,
-                but the underlying biological drivers that led the
-                machine to its conclusion.
-              </p>
+            <div className="max-w-[900px] whitespace-pre-wrap break-words text-[14px] leading-[1.7] text-[#5C5C5C] sm:text-[15px] sm:leading-[1.75] dark:text-[#D0D0D0]">
+              {file?.extractedText ? (
+                file.extractedText
+                  .split(/\n\s*\n/)
+                  .map(
+                    (paragraph, index) => (
+                      <p
+                        key={index}
+                        className="mb-[17px]"
+                      >
+                        {paragraph.trim()}
+                      </p>
+                    )
+                  )
+              ) : (
+                <p className="text-[#888]">
+                  No extracted text is
+                  available for this
+                  document.
+                </p>
+              )}
             </div>
           </article>
 
-          {/* ==================================================
-              CURRENTLY READING CARD
-          ================================================== */}
+          {/* CURRENTLY READING */}
 
-          <aside
-            className="
-              flex
-              min-h-0
-              w-full
-              shrink-0
-              flex-col
-              items-center
-              rounded-[18px]
-              bg-[#F7F7F7]
-              px-8
-              py-7
-              dark:bg-[#1C1C1E]
-              lg:h-full
-              lg:w-[390px]
-            "
-          >
-            {/* =================================================
-                HEADER
-            ================================================= */}
+          <aside className="flex min-h-0 w-full shrink-0 flex-col items-center rounded-[16px] bg-[#F7F7F7] px-5 py-6 sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 lg:h-full lg:w-[350px] xl:w-[390px] dark:bg-[#1C1C1E]">
 
-            <div className="mb-6 flex w-full items-center justify-between">
-              <h2
-                className="
-                  text-[17px]
-                  font-semibold
-                  text-[#171717]
-                  dark:text-white
-                "
-              >
+            {/* HEADER */}
+
+            <div className="mb-5 flex w-full items-center justify-between sm:mb-6">
+              <h2 className="text-[16px] font-semibold text-[#171717] dark:text-white sm:text-[17px]">
                 Currently Reading
               </h2>
 
               <button
                 type="button"
-                className="
-                  flex
-                  h-7
-                  w-7
-                  items-center
-                  justify-center
-                  text-[#AAAAAA]
-                "
+                className="flex h-7 w-7 shrink-0 items-center justify-center text-[#AAAAAA]"
               >
                 <svg
                   width="17"
                   height="17"
                   viewBox="0 0 24 24"
                   fill="currentColor"
+                  aria-hidden="true"
                 >
-                  <circle cx="5" cy="12" r="1.5" />
-                  <circle cx="12" cy="12" r="1.5" />
-                  <circle cx="19" cy="12" r="1.5" />
+                  <circle
+                    cx="5"
+                    cy="12"
+                    r="1.5"
+                  />
+
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="1.5"
+                  />
+
+                  <circle
+                    cx="19"
+                    cy="12"
+                    r="1.5"
+                  />
                 </svg>
               </button>
             </div>
 
-            {/* =================================================
-                ORB
-            ================================================= */}
+            {/* ORB */}
 
-            <div className="relative mb-5 h-[180px] w-[180px] shrink-0">
-              <div
-                className="
-                  absolute
-                  inset-0
-                  scale-[1.1]
-                  rounded-full
-                  bg-[#8B3DFF]/20
-                  blur-[32px]
-                "
-              />
+            <div className="relative mb-4 h-[135px] w-[135px] shrink-0 sm:h-[155px] sm:w-[155px] md:h-[170px] md:w-[170px] lg:h-[165px] lg:w-[165px] xl:h-[180px] xl:w-[180px]">
+
+              <div className="absolute inset-0 scale-[1.1] rounded-full bg-[#8B3DFF]/20 blur-[28px] sm:blur-[30px]" />
 
               <video
                 ref={videoRef}
@@ -419,94 +955,92 @@ const Reading = () => {
                 loop
                 muted
                 playsInline
-                className="
-                  relative
-                  z-10
-                  h-full
-                  w-full
-                  object-contain
-                "
+                className="relative z-10 h-full w-full object-contain"
               />
+
+              {/* AUDIO */}
 
               <audio
                 ref={audioRef}
-                src={assets.sonarAudio}
                 preload="metadata"
+                onPlay={handleAudioPlay}
+                onPause={handleAudioPause}
+                onTimeUpdate={handleAudioTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onDurationChange={handleDurationChange}
+                onCanPlay={handleCanPlay}
+                onEnded={handleAudioEnded}
+                onError={handleAudioError}
               />
             </div>
 
-            {/* =================================================
-                NARRATOR
-            ================================================= */}
+            {/* NARRATOR */}
 
-            <p
-              className="
-                mb-8
-                shrink-0
-                text-[12px]
-                text-[#777777]
-                dark:text-[#999999]
-              "
-            >
+            <p className="mb-5 max-w-full shrink-0 truncate text-center text-[11px] text-[#777777] sm:mb-7 sm:text-[12px] dark:text-[#999999]">
               Narrator:{" "}
               <span className="font-medium text-[#3F3F3F] dark:text-white">
-                Helen (NGA)
+                {getVoiceDisplayName()}
               </span>
             </p>
 
-            {/* =================================================
-                CONTROLS CONTENT
+            {/* MODEL */}
 
-                flex-1 makes this section take the remaining
-                vertical space inside the card.
-            ================================================= */}
+            {voice?.model && (
+              <p
+                className="-mt-3 mb-5 max-w-[90%] truncate text-center text-[8px] text-[#AAAAAA] sm:text-[9px]"
+                title={voice.model}
+              >
+                {voice.model}
+              </p>
+            )}
 
-            <div
-              className="
-                flex
-                w-full
-                min-h-0
-                flex-1
-                flex-col
-              "
-            >
-              {/* =================================================
-                  SPEED / VOLUME
-              ================================================= */}
+            {/* GENERATING */}
 
-              <div className="mb-3 flex w-full items-center justify-between">
+            {isGeneratingAudio && (
+              <div className="-mt-2 mb-4 flex items-center gap-2">
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#7145FF]/20 border-t-[#7145FF]" />
+
+                <p className="text-[10px] text-[#888] dark:text-[#AAA]">
+                  Generating speech...
+                </p>
+              </div>
+            )}
+
+            {/* VOICE ERROR */}
+
+            {voiceError && (
+              <p className="-mt-3 mb-4 max-w-full text-center text-[10px] text-red-500">
+                {voiceError}
+              </p>
+            )}
+
+            {/* AUDIO ERROR */}
+
+            {audioError && (
+              <p className="-mt-2 mb-4 max-w-full text-center text-[10px] text-red-500">
+                {audioError}
+              </p>
+            )}
+
+            {/* CONTROLS */}
+
+            <div className="flex min-h-0 w-full flex-1 flex-col">
+
+              {/* SPEED + VOLUME */}
+
+              <div className="mb-4 flex w-full items-center justify-between gap-3">
+
                 {/* SPEED */}
 
-                <div className="flex items-center gap-2">
-                  <span
-                    className="
-                      text-[12px]
-                      text-[#666666]
-                      dark:text-[#AAAAAA]
-                    "
-                  >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 text-[11px] text-[#666666] dark:text-[#AAAAAA] sm:text-[12px]">
                     Speed:
                   </span>
 
                   <button
                     type="button"
                     onClick={changeSpeed}
-                    className="
-                      flex
-                      h-[29px]
-                      items-center
-                      rounded-[6px]
-                      border
-                      border-[#D5D5D5]
-                      bg-white
-                      px-3
-                      text-[12px]
-                      font-medium
-                      text-[#333333]
-                      dark:border-white/10
-                      dark:bg-white/5
-                      dark:text-white
-                    "
+                    className="flex h-[29px] shrink-0 items-center rounded-[6px] border border-[#D5D5D5] bg-white px-2.5 text-[11px] font-medium text-[#333333] sm:px-3 sm:text-[12px] dark:border-white/10 dark:bg-white/5 dark:text-white"
                   >
                     {speed}x
                   </button>
@@ -514,51 +1048,107 @@ const Reading = () => {
 
                 {/* VOLUME */}
 
-                <div className="flex items-center gap-2">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="text-[#9AA7B8]"
+                <div className="flex shrink-0 items-center gap-2">
+
+                  <button
+                    type="button"
+                    onClick={toggleMute}
+                    disabled={!audioUrl}
+                    aria-label={
+                      isMuted
+                        ? "Unmute"
+                        : "Mute"
+                    }
+                    className="flex h-6 w-6 items-center justify-center text-[#9AA7B8] transition hover:text-[#7145FF] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <path d="M3 9v6h4l5 5V4L7 9H3Z" />
+                    {isMuted ||
+                    volume === 0 ? (
+                      <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M11 5L6 9H3v6h3l5 4V5Z" />
 
-                    <path d="M16.5 8.5a1 1 0 0 0-1.4 1.4A3 3 0 0 1 16 12a3 3 0 0 1-.9 2.1 1 1 0 1 0 1.4 1.4A5 5 0 0 0 18 12a5 5 0 0 0-1.5-3.5Z" />
+                        <line
+                          x1="22"
+                          y1="9"
+                          x2="16"
+                          y2="15"
+                        />
 
-                    <path d="M19.3 5.7a1 1 0 0 0-1.4 1.4A7 7 0 0 1 20 12a7 7 0 0 1-2.1 4.9 1 1 0 1 0 1.4 1.4A9 9 0 0 0 22 12a9 9 0 0 0-2.7-6.3Z" />
-                  </svg>
+                        <line
+                          x1="16"
+                          y1="9"
+                          x2="22"
+                          y2="15"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M11 5L6 9H3v6h3l5 4V5Z" />
 
-                  <div className="h-[4px] w-[65px] rounded-full bg-[#D8DDE3]">
-                    <div className="h-full w-[74%] rounded-full bg-[#7A8798]" />
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+
+                        <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+                      </svg>
+                    )}
+                  </button>
+
+                  <div className="relative h-[20px] w-[55px] sm:w-[70px]">
+
+                    <div className="pointer-events-none absolute left-0 top-1/2 h-[4px] w-full -translate-y-1/2 rounded-full bg-[#D8DDE3]" />
+
+                    <div
+                      className="pointer-events-none absolute left-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full bg-[#7A8798]"
+                      style={{
+                        width: `${volumePercentage}%`,
+                      }}
+                    />
+
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={
+                        isMuted
+                          ? 0
+                          : volume
+                      }
+                      onChange={
+                        handleVolumeChange
+                      }
+                      disabled={!audioUrl}
+                      aria-label="Volume"
+                      className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* =================================================
-                  PROGRESS BAR
-              ================================================= */}
+              {/* PROGRESS */}
 
               <div className="w-full">
-                <div
-                  className="
-                    relative
-                    h-[5px]
-                    w-full
-                    overflow-hidden
-                    rounded-full
-                    bg-[#D8DDE3]
-                  "
-                >
+
+                <div className="relative h-[5px] w-full overflow-hidden rounded-full bg-[#D8DDE3]">
+
                   <div
-                    className="
-                      absolute
-                      left-0
-                      top-0
-                      h-full
-                      rounded-full
-                      bg-[#56677D]
-                    "
+                    className="absolute left-0 top-0 h-full rounded-full bg-[#56677D]"
                     style={{
                       width: `${progress}%`,
                     }}
@@ -568,64 +1158,43 @@ const Reading = () => {
                     type="range"
                     min="0"
                     max={duration || 0}
-                    value={currentTime}
+                    value={Math.min(
+                      currentTime,
+                      duration || 0
+                    )}
                     onChange={handleSeek}
-                    className="
-                      absolute
-                      inset-0
-                      h-full
-                      w-full
-                      cursor-pointer
-                      appearance-none
-                      opacity-0
-                    "
+                    disabled={
+                      !audioUrl ||
+                      duration === 0
+                    }
+                    aria-label="Audio progress"
+                    className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
                   />
                 </div>
 
-                {/* TIME */}
+                <div className="mt-2 flex justify-between text-[9px] text-[#999999] sm:text-[10px]">
+                  <span>
+                    {formatTime(currentTime)}
+                  </span>
 
-                <div
-                  className="
-                    mt-2
-                    flex
-                    justify-between
-                    text-[10px]
-                    text-[#999999]
-                  "
-                >
-                  <span>{formatTime(currentTime)}</span>
-
-                  <span>{formatTime(duration)}</span>
+                  <span>
+                    {formatTime(duration)}
+                  </span>
                 </div>
               </div>
 
-              {/* =================================================
-                  CONTROLS
+              {/* MAIN CONTROLS */}
 
-                  Immediately after progress bar.
-              ================================================= */}
+              <div className="mt-4 flex items-center justify-center gap-2 sm:gap-3">
 
-              <div className="mt-3 flex items-center justify-center gap-3">
                 {/* BACKWARD */}
 
                 <button
                   type="button"
                   onClick={skipBackward}
-                  className="
-                    flex
-                    h-[40px]
-                    w-[40px]
-                    items-center
-                    justify-center
-                    rounded-[8px]
-                    border
-                    border-[#D5D8DD]
-                    text-[#8C9BAE]
-                    transition
-                    hover:bg-[#F0F1F3]
-                    dark:border-white/10
-                    dark:hover:bg-white/5
-                  "
+                  disabled={!audioUrl}
+                  aria-label="Skip backward 10 seconds"
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#D5D8DD] text-[#8C9BAE] transition hover:bg-[#F0F1F3] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[40px] sm:w-[40px] dark:border-white/10 dark:hover:bg-white/5"
                 >
                   <svg
                     width="18"
@@ -640,6 +1209,16 @@ const Reading = () => {
                     <path d="M9 14L5 10l4-4" />
 
                     <path d="M5 10h8a5 5 0 0 1 5 5v1" />
+
+                    <text
+                      x="10"
+                      y="21"
+                      fontSize="6"
+                      fill="currentColor"
+                      stroke="none"
+                    >
+                      10
+                    </text>
                   </svg>
                 </button>
 
@@ -648,21 +1227,9 @@ const Reading = () => {
                 <button
                   type="button"
                   onClick={skipForward}
-                  className="
-                    flex
-                    h-[40px]
-                    w-[40px]
-                    items-center
-                    justify-center
-                    rounded-[8px]
-                    border
-                    border-[#D5D8DD]
-                    text-[#8C9BAE]
-                    transition
-                    hover:bg-[#F0F1F3]
-                    dark:border-white/10
-                    dark:hover:bg-white/5
-                  "
+                  disabled={!audioUrl}
+                  aria-label="Skip forward 10 seconds"
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#D5D8DD] text-[#8C9BAE] transition hover:bg-[#F0F1F3] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[40px] sm:w-[40px] dark:border-white/10 dark:hover:bg-white/5"
                 >
                   <svg
                     width="18"
@@ -677,6 +1244,16 @@ const Reading = () => {
                     <path d="M15 14l4-4-4-4" />
 
                     <path d="M19 10h-8a5 5 0 0 0-5 5v1" />
+
+                    <text
+                      x="9"
+                      y="21"
+                      fontSize="6"
+                      fill="currentColor"
+                      stroke="none"
+                    >
+                      10
+                    </text>
                   </svg>
                 </button>
 
@@ -685,22 +1262,16 @@ const Reading = () => {
                 <button
                   type="button"
                   onClick={togglePlay}
-                  className="
-                    flex
-                    h-[50px]
-                    w-[50px]
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-gradient-to-br
-                    from-[#7145FF]
-                    via-[#7549F4]
-                    to-[#4D61E8]
-                    text-white
-                    shadow-[0_8px_22px_rgba(105,71,255,0.3)]
-                    transition
-                    hover:scale-[1.03]
-                  "
+                  disabled={
+                    !audioUrl ||
+                    isGeneratingAudio
+                  }
+                  aria-label={
+                    isPlaying
+                      ? "Pause"
+                      : "Play"
+                  }
+                  className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7145FF] via-[#7549F4] to-[#4D61E8] text-white shadow-[0_8px_22px_rgba(105,71,255,0.3)] transition hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[50px] sm:w-[50px]"
                 >
                   {isPlaying ? (
                     <svg
@@ -742,21 +1313,9 @@ const Reading = () => {
                 <button
                   type="button"
                   onClick={restartAudio}
-                  className="
-                    flex
-                    h-[40px]
-                    w-[40px]
-                    items-center
-                    justify-center
-                    rounded-[8px]
-                    border
-                    border-[#D5D8DD]
-                    text-[#8C9BAE]
-                    transition
-                    hover:bg-[#F0F1F3]
-                    dark:border-white/10
-                    dark:hover:bg-white/5
-                  "
+                  disabled={!audioUrl}
+                  aria-label="Restart audio"
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#D5D8DD] text-[#8C9BAE] transition hover:bg-[#F0F1F3] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[40px] sm:w-[40px] dark:border-white/10 dark:hover:bg-white/5"
                 >
                   <svg
                     width="18"
@@ -779,55 +1338,20 @@ const Reading = () => {
         </div>
       </main>
 
-      {/* ======================================================
+      {/* ========================================================
           BOTTOM PLAYER
-      ====================================================== */}
+      ======================================================== */}
 
-      <div
-        className="
-          absolute
-          bottom-5
-          left-1/2
-          z-40
-          w-[calc(100%-60px)]
-          max-w-[1250px]
-          -translate-x-1/2
-        "
-      >
-        <div
-          className="
-            flex
-            h-[72px]
-            items-center
-            gap-5
-            rounded-[14px]
-            bg-[#252528]
-            px-5
-            text-white
-            shadow-[0_8px_25px_rgba(0,0,0,0.15)]
-          "
-        >
-          {/* ==================================================
-              FILE ICON
-          ================================================== */}
+      <div className="absolute bottom-3 left-1/2 z-40 w-[calc(100%-24px)] -translate-x-1/2 sm:bottom-4 sm:w-[calc(100%-32px)] md:w-[calc(100%-48px)] lg:bottom-5 lg:w-[calc(100%-60px)] xl:max-w-[1250px]">
 
-          <div
-            className="
-              flex
-              h-[40px]
-              w-[40px]
-              shrink-0
-              items-center
-              justify-center
-              rounded-[10px]
-              bg-gradient-to-br
-              from-[#7447FF]
-              to-[#4D61E8]
-            "
-          >
+        <div className="flex min-h-[58px] items-center gap-3 rounded-[13px] bg-[#252528] px-3 py-2.5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] sm:min-h-[65px] sm:gap-4 sm:px-4 md:h-[72px] md:px-5">
+
+          {/* FILE ICON */}
+
+          <div className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[9px] bg-gradient-to-br from-[#7447FF] to-[#4D61E8] sm:h-[40px] sm:w-[40px]">
             <svg
-              width="17"
-              height="17"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="white"
@@ -841,57 +1365,79 @@ const Reading = () => {
             </svg>
           </div>
 
-          {/* ==================================================
-              FILE INFO
-          ================================================== */}
+          {/* FILE INFO */}
 
-          <div className="w-[170px] shrink-0">
-            <p className="truncate text-[12px] font-medium">
-              Research_Paper.pdf
+          <div className="min-w-0 w-[100px] shrink-0 sm:w-[140px] md:w-[170px]">
+            <p className="truncate text-[10px] font-medium sm:text-[11px] md:text-[12px]">
+              {file?.originalName ||
+                "Document.pdf"}
             </p>
 
-            <p className="mt-1 text-[9px] text-[#99999F]">
-              Section 2 of 14 • {formatTime(currentTime)} /{" "}
+            <p className="mt-1 text-[8px] text-[#99999F] sm:text-[9px]">
+              {formatTime(currentTime)} /{" "}
               {formatTime(duration)}
             </p>
           </div>
 
-          {/* ==================================================
-              BOTTOM PROGRESS
-          ================================================== */}
+          {/* BOTTOM PROGRESS */}
 
-          <div className="mx-3 flex min-w-0 flex-1">
-            <div className="h-[3px] w-full rounded-full bg-white/10">
+          <div className="mx-1 hidden min-w-0 flex-1 sm:block md:mx-3">
+
+            <div className="relative h-[3px] w-full rounded-full bg-white/10">
+
               <div
-                className="h-full rounded-full bg-[#626269]"
+                className="absolute left-0 top-0 h-full rounded-full bg-[#626269]"
                 style={{
                   width: `${progress}%`,
                 }}
               />
+
+              <input
+                type="range"
+                min="0"
+                max={duration || 0}
+                value={Math.min(
+                  currentTime,
+                  duration || 0
+                )}
+                onChange={handleSeek}
+                disabled={
+                  !audioUrl ||
+                  duration === 0
+                }
+                aria-label="Bottom audio progress"
+                className="absolute -top-[6px] left-0 h-[15px] w-full cursor-pointer appearance-none bg-transparent opacity-0"
+              />
             </div>
           </div>
 
-          {/* ==================================================
-              RIGHT INFORMATION
-          ================================================== */}
+          {/* RIGHT INFO */}
 
-          <div className="flex shrink-0 items-center gap-4">
-            <span className="text-[10px] text-[#B4B4B8]">
-              Helen (NGA)
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 md:gap-4">
+
+            <span className="hidden max-w-[100px] truncate text-[9px] text-[#B4B4B8] sm:block md:max-w-[130px] md:text-[10px]">
+              {getVoiceDisplayName()}
             </span>
 
-            <span className="rounded-[4px] bg-white/10 px-2 py-1 text-[9px]">
+            <span className="rounded-[4px] bg-white/10 px-1.5 py-1 text-[8px] sm:px-2 sm:text-[9px]">
               {speed}x
             </span>
+
+            {/* BOTTOM PLAY BUTTON */}
 
             <button
               type="button"
               onClick={togglePlay}
-              className="
-                text-[#9B9BA1]
-                transition
-                hover:text-white
-              "
+              disabled={
+                !audioUrl ||
+                isGeneratingAudio
+              }
+              aria-label={
+                isPlaying
+                  ? "Pause"
+                  : "Play"
+              }
+              className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
             >
               {isPlaying ? (
                 <svg

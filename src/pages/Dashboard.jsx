@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets.js";
 import ThemeToggle from "../components/ThemeToggle";
 import useAuthStore from "../stores/authStore.js";
@@ -35,13 +36,15 @@ const brandColors = [
   },
 ];
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 const Dashboard = () => {
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
 
   // ==========================================
   // AUTH STORE
@@ -51,6 +54,10 @@ const Dashboard = () => {
 
   const getCurrentUser = useAuthStore(
     (state) => state.getCurrentUser
+  );
+
+  const uploadFile = useAuthStore(
+    (state) => state.uploadFile
   );
 
   const isLoading = useAuthStore(
@@ -71,15 +78,13 @@ const Dashboard = () => {
   // USER INFORMATION
   // ==========================================
 
-  // Name entered during onboarding
-  // Example: "Johnny"
   const displayName =
     user?.onboarding?.displayName ||
     user?.name ||
     "User";
 
   // ==========================================
-  // GET USER'S BRAND COLOR
+  // GET USER BRAND COLOR
   // ==========================================
 
   const selectedBrandColor =
@@ -95,7 +100,7 @@ const Dashboard = () => {
   // ==========================================
 
   const handleBrowseClick = () => {
-    if (selectedFile) return;
+    if (selectedFile || isLoading) return;
 
     fileInputRef.current?.click();
   };
@@ -110,6 +115,7 @@ const Dashboard = () => {
     if (!file) return;
 
     setError("");
+    setUploadSuccess("");
 
     // Check PDF
     if (file.type !== "application/pdf") {
@@ -129,8 +135,6 @@ const Dashboard = () => {
     }
 
     setSelectedFile(file);
-
-    console.log("Selected file:", file);
   };
 
   // ==========================================
@@ -138,11 +142,69 @@ const Dashboard = () => {
   // ==========================================
 
   const handleDeleteFile = () => {
+    if (isLoading) return;
+
     setSelectedFile(null);
     setError("");
+    setUploadSuccess("");
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  // ==========================================
+  // UPLOAD FILE
+  // ==========================================
+
+  const handleUploadFile = async () => {
+    if (!selectedFile || isLoading) return;
+
+    setError("");
+    setUploadSuccess("");
+
+    try {
+      const result = await uploadFile(selectedFile);
+
+      console.log("Upload result:", result);
+
+      if (!result?.success) {
+        setError(
+          result?.message || "Failed to upload PDF."
+        );
+        return;
+      }
+
+      if (!result?.fileId) {
+        setError(
+          "PDF uploaded successfully, but no file ID was returned."
+        );
+        return;
+      }
+
+      console.log("File ID:", result.fileId);
+
+      setUploadSuccess("PDF uploaded successfully!");
+
+      setSelectedFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      // Navigate to Reading page
+      navigate(
+        `/dashboard/reading?fileId=${encodeURIComponent(
+          result.fileId
+        )}`
+      );
+    } catch (error) {
+      console.error("Upload error:", error);
+
+      setError(
+        error?.message ||
+          "Something went wrong while uploading the PDF."
+      );
     }
   };
 
@@ -162,17 +224,13 @@ const Dashboard = () => {
         justify-center
         px-4
         py-8
-
         sm:px-6
         sm:py-10
-
         md:px-7
         md:py-12
       "
     >
-      {/* ==========================================
-          THEME TOGGLE
-      ========================================== */}
+      {/* THEME TOGGLE */}
 
       <div
         className="
@@ -180,7 +238,6 @@ const Dashboard = () => {
           right-4
           top-4
           z-10
-
           sm:right-6
           sm:top-5
         "
@@ -188,9 +245,7 @@ const Dashboard = () => {
         <ThemeToggle />
       </div>
 
-      {/* ==========================================
-          SONAR ORB
-      ========================================== */}
+      {/* SONAR ORB */}
 
       <div
         className="
@@ -198,9 +253,7 @@ const Dashboard = () => {
           flex
           items-center
           justify-center
-
           sm:mb-7
-
           md:mb-8
         "
       >
@@ -215,17 +268,13 @@ const Dashboard = () => {
             h-auto
             w-[160px]
             object-contain
-
             sm:w-[180px]
-
             md:w-[200px]
           "
         />
       </div>
 
-      {/* ==========================================
-          WELCOME TEXT
-      ========================================== */}
+      {/* WELCOME TEXT */}
 
       <h1
         className="
@@ -235,9 +284,7 @@ const Dashboard = () => {
           font-semibold
           tracking-tight
           text-gray-900
-
           sm:text-[28px]
-
           dark:text-white
         "
       >
@@ -253,19 +300,15 @@ const Dashboard = () => {
           text-center
           text-[13px]
           text-gray-500
-
           sm:mb-10
           sm:text-[14px]
-
           dark:text-gray-400
         "
       >
         What PDF would you like to listen to today?
       </p>
 
-      {/* ==========================================
-          UPLOAD AREA
-      ========================================== */}
+      {/* UPLOAD AREA */}
 
       <div
         className="
@@ -284,21 +327,16 @@ const Dashboard = () => {
           py-8
           transition
           hover:border-gray-400
-
           sm:px-6
           sm:py-9
-
           md:px-8
           md:py-10
-
           dark:border-[#333]
           dark:bg-[#0c0c0c]
           dark:hover:border-[#444]
         "
       >
-        {/* ==========================================
-            CLOUD UPLOAD ICON
-        ========================================== */}
+        {/* CLOUD ICON */}
 
         <div
           className="
@@ -309,7 +347,6 @@ const Dashboard = () => {
             items-center
             justify-center
             rounded-full
-
             sm:h-11
             sm:w-11
           "
@@ -332,9 +369,7 @@ const Dashboard = () => {
           </svg>
         </div>
 
-        {/* ==========================================
-            UPLOAD HEADING
-        ========================================== */}
+        {/* HEADING */}
 
         <p
           className="
@@ -343,18 +378,14 @@ const Dashboard = () => {
             text-[13px]
             font-medium
             text-gray-800
-
             sm:text-[14px]
-
             dark:text-gray-100
           "
         >
           Upload a PDF to get started
         </p>
 
-        {/* ==========================================
-            BROWSE TEXT
-        ========================================== */}
+        {/* BROWSE */}
 
         <p
           className="
@@ -362,9 +393,7 @@ const Dashboard = () => {
             text-center
             text-[12px]
             text-gray-500
-
             sm:text-[13px]
-
             dark:text-gray-400
           "
         >
@@ -376,10 +405,13 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={handleBrowseClick}
+                disabled={isLoading}
                 className="
                   cursor-pointer
                   font-medium
                   hover:underline
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
                 "
                 style={{
                   color: brandColor,
@@ -391,9 +423,7 @@ const Dashboard = () => {
           )}
         </p>
 
-        {/* ==========================================
-            HIDDEN FILE INPUT
-        ========================================== */}
+        {/* FILE INPUT */}
 
         <input
           ref={fileInputRef}
@@ -401,28 +431,23 @@ const Dashboard = () => {
           accept=".pdf,application/pdf"
           onChange={handleFileChange}
           className="hidden"
-          disabled={!!selectedFile}
+          disabled={!!selectedFile || isLoading}
         />
 
-        {/* ==========================================
-            FILE SIZE INFORMATION
-        ========================================== */}
+        {/* FILE SIZE */}
 
         <p
           className="
             text-center
             text-[10px]
             text-gray-400
-
             sm:text-[11px]
           "
         >
           Supports .pdf files up to 25MB.
         </p>
 
-        {/* ==========================================
-            ERROR MESSAGE
-        ========================================== */}
+        {/* ERROR */}
 
         {error && (
           <p
@@ -433,7 +458,6 @@ const Dashboard = () => {
               text-[11px]
               font-medium
               text-red-500
-
               sm:text-[12px]
             "
           >
@@ -441,112 +465,154 @@ const Dashboard = () => {
           </p>
         )}
 
-        {/* ==========================================
-            SELECTED FILE
-        ========================================== */}
+        {/* SUCCESS */}
+
+        {uploadSuccess && (
+          <p
+            className="
+              mt-4
+              text-center
+              text-[11px]
+              font-medium
+              sm:text-[12px]
+            "
+            style={{
+              color: brandColor,
+            }}
+          >
+            {uploadSuccess}
+          </p>
+        )}
+
+        {/* SELECTED FILE */}
 
         {selectedFile && !error && (
-          <div
-            className="
-              mt-5
-              flex
-              w-full
-              min-w-0
-              items-center
-              justify-between
-              gap-2
-              rounded-lg
-              bg-gray-50
-              px-3
-              py-3
+          <>
+            <div
+              className="
+                mt-5
+                flex
+                w-full
+                min-w-0
+                items-center
+                justify-between
+                gap-2
+                rounded-lg
+                bg-gray-50
+                px-3
+                py-3
+                sm:px-4
+                dark:bg-[#151515]
+              "
+            >
+              <div className="min-w-0 flex-1">
+                <p
+                  className="
+                    truncate
+                    text-[12px]
+                    font-medium
+                    text-gray-800
+                    sm:text-[13px]
+                    dark:text-gray-100
+                  "
+                  title={selectedFile.name}
+                >
+                  {selectedFile.name}
+                </p>
 
-              sm:px-4
+                <p
+                  className="
+                    mt-1
+                    text-[10px]
+                    text-gray-500
+                    sm:text-[11px]
+                    dark:text-gray-400
+                  "
+                >
+                  {(
+                    selectedFile.size /
+                    (1024 * 1024)
+                  ).toFixed(2)}{" "}
+                  MB
+                </p>
+              </div>
 
-              dark:bg-[#151515]
-            "
-          >
-            {/* FILE INFORMATION */}
+              {/* DELETE BUTTON */}
 
-            <div className="min-w-0 flex-1">
-              <p
+              <button
+                type="button"
+                onClick={handleDeleteFile}
+                disabled={isLoading}
+                title="Delete PDF"
+                aria-label="Delete PDF"
                 className="
-                  truncate
-                  text-[12px]
-                  font-medium
-                  text-gray-800
-
-                  sm:text-[13px]
-
-                  dark:text-gray-100
-                "
-                title={selectedFile.name}
-              >
-                {selectedFile.name}
-              </p>
-
-              <p
-                className="
-                  mt-1
-                  text-[10px]
-                  text-gray-500
-
-                  sm:text-[11px]
-
-                  dark:text-gray-400
+                  ml-1
+                  flex
+                  h-8
+                  w-8
+                  flex-shrink-0
+                  cursor-pointer
+                  items-center
+                  justify-center
+                  rounded-lg
+                  text-gray-400
+                  transition
+                  hover:bg-red-50
+                  hover:text-red-500
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  dark:hover:bg-red-500/10
                 "
               >
-                {(
-                  selectedFile.size /
-                  (1024 * 1024)
-                ).toFixed(2)}{" "}
-                MB
-              </p>
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M8 6V4h8v2" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v5" />
+                  <path d="M14 11v5" />
+                </svg>
+              </button>
             </div>
 
-            {/* ==========================================
-                DELETE BUTTON
-            ========================================== */}
+            {/* UPLOAD BUTTON */}
 
             <button
               type="button"
-              onClick={handleDeleteFile}
-              title="Delete PDF"
-              aria-label="Delete PDF"
+              onClick={handleUploadFile}
+              disabled={isLoading}
               className="
-                ml-1
-                flex
-                h-8
-                w-8
-                flex-shrink-0
-                cursor-pointer
-                items-center
-                justify-center
+                mt-4
+                w-full
                 rounded-lg
-                text-gray-400
+                px-4
+                py-3
+                text-[12px]
+                font-medium
+                text-white
                 transition
-                hover:bg-red-50
-                hover:text-red-500
-
-                dark:hover:bg-red-500/10
+                hover:opacity-90
+                active:scale-[0.98]
+                disabled:cursor-not-allowed
+                disabled:opacity-60
+                sm:text-[13px]
               "
+              style={{
+                backgroundColor: brandColor,
+              }}
             >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 6h18" />
-                <path d="M8 6V4h8v2" />
-                <path d="M19 6l-1 14H6L5 6" />
-                <path d="M10 11v5" />
-                <path d="M14 11v5" />
-              </svg>
+              {isLoading
+                ? "Uploading PDF..."
+                : "Upload PDF"}
             </button>
-          </div>
+          </>
         )}
       </div>
     </div>
