@@ -14,6 +14,50 @@ const API_URL = configuredApiUrl.endsWith("/api")
   : `${configuredApiUrl.replace(/\/$/, "")}/api`;
 
 // ==========================================
+// BRAND COLORS
+// ==========================================
+
+export const brandColors = [
+  {
+    id: "purple",
+    color: "#A855F7",
+    label: "Purple",
+  },
+  {
+    id: "blue",
+    color: "#409CF2",
+    label: "Blue",
+  },
+  {
+    id: "coral",
+    color: "#FF6B6B",
+    label: "Coral",
+  },
+  {
+    id: "pink",
+    color: "#EC137F",
+    label: "Pink",
+  },
+  {
+    id: "teal",
+    color: "#00D2FF",
+    label: "Teal",
+  },
+];
+
+// ==========================================
+// GET BRAND COLOR
+// ==========================================
+
+const getBrandColor = (brandColor) => {
+  const foundColor = brandColors.find(
+    (color) => color.id === brandColor
+  );
+
+  return foundColor?.color || "#A855F7";
+};
+
+// ==========================================
 // AUTH STORE
 // ==========================================
 
@@ -27,6 +71,26 @@ const useAuthStore = create((set) => ({
   authReady: false,
   isLoading: false,
   error: null,
+
+  // ==========================================
+  // BRAND COLOR
+  // ==========================================
+
+  brandColor: "purple",
+  brandColorHex: "#A855F7",
+
+  // ==========================================
+  // SET BRAND COLOR LOCALLY
+  // ==========================================
+
+  setBrandColor: (brandColor) => {
+    const color = getBrandColor(brandColor);
+
+    set({
+      brandColor,
+      brandColorHex: color,
+    });
+  },
 
   // ==========================================
   // UPLOADED FILE
@@ -59,6 +123,8 @@ const useAuthStore = create((set) => ({
       uploadedFile: null,
       recentFiles: [],
       pinnedFiles: [],
+      brandColor: "purple",
+      brandColorHex: "#A855F7",
       error: null,
       authReady: true,
     });
@@ -113,9 +179,15 @@ const useAuthStore = create((set) => ({
 
       localStorage.setItem("token", token);
 
+      const userBrandColor =
+        user?.brandColor || "purple";
+
       set({
         user,
         token,
+        brandColor: userBrandColor,
+        brandColorHex:
+          getBrandColor(userBrandColor),
         authReady: true,
         isLoading: false,
         error: null,
@@ -185,9 +257,15 @@ const useAuthStore = create((set) => ({
       const updatedUser =
         response.data.user;
 
+      const userBrandColor =
+        updatedUser?.brandColor || "purple";
+
       set({
         user: updatedUser,
         token,
+        brandColor: userBrandColor,
+        brandColorHex:
+          getBrandColor(userBrandColor),
         isLoading: false,
         error: null,
       });
@@ -229,7 +307,8 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
       if (!token) {
         set({
@@ -243,10 +322,6 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      // ========================================
-      // CHECK FILE
-      // ========================================
-
       if (!file) {
         set({
           isLoading: false,
@@ -258,10 +333,6 @@ const useAuthStore = create((set) => ({
           message: "Please select a PDF file",
         };
       }
-
-      // ========================================
-      // CHECK FILE TYPE
-      // ========================================
 
       if (file.type !== "application/pdf") {
         set({
@@ -275,38 +346,28 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      // ========================================
-      // CHECK FILE SIZE
-      // ========================================
-
       const MAX_FILE_SIZE =
         25 * 1024 * 1024;
 
       if (file.size > MAX_FILE_SIZE) {
         set({
           isLoading: false,
-          error: "PDF file must not exceed 25 MB",
+          error:
+            "PDF file must not exceed 25 MB",
         });
 
         return {
           success: false,
-          message: "PDF file must not exceed 25 MB",
+          message:
+            "PDF file must not exceed 25 MB",
         };
       }
-
-      // ========================================
-      // FORM DATA
-      // ========================================
 
       const formData = new FormData();
 
       formData.append("file", file);
 
       console.log("Uploading PDF...");
-
-      // ========================================
-      // UPLOAD
-      // ========================================
 
       const response = await axios.post(
         `${API_URL}/files/upload`,
@@ -323,10 +384,6 @@ const useAuthStore = create((set) => ({
         response.data
       );
 
-      // ========================================
-      // FILE ID
-      // ========================================
-
       const fileId =
         response.data.fileId;
 
@@ -336,10 +393,6 @@ const useAuthStore = create((set) => ({
         );
       }
 
-      // ========================================
-      // SAVE UPLOADED FILE
-      // ========================================
-
       const uploadedFile = {
         id: fileId,
         originalName: file.name,
@@ -348,10 +401,6 @@ const useAuthStore = create((set) => ({
         isPinned: false,
       };
 
-      // ========================================
-      // CREATE RECENT FILE
-      // ========================================
-
       const recentFile = {
         id: fileId,
         originalName: file.name,
@@ -359,10 +408,6 @@ const useAuthStore = create((set) => ({
           new Date().toISOString(),
         isPinned: false,
       };
-
-      // ========================================
-      // UPDATE UPLOADED FILE + RECENTS
-      // ========================================
 
       set((state) => ({
         uploadedFile,
@@ -378,11 +423,6 @@ const useAuthStore = create((set) => ({
         isLoading: false,
         error: null,
       }));
-
-      console.log(
-        "Uploaded file saved:",
-        uploadedFile
-      );
 
       return {
         success: true,
@@ -462,11 +502,6 @@ const useAuthStore = create((set) => ({
         }
       );
 
-      console.log(
-        "Get file response:",
-        response.data
-      );
-
       const file =
         response.data.file;
 
@@ -481,7 +516,6 @@ const useAuthStore = create((set) => ({
           ...state.uploadedFile,
           ...file,
         },
-
         isLoading: false,
         error: null,
       }));
@@ -541,10 +575,6 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      // ========================================
-      // GET RECENT FILES FROM BACKEND
-      // ========================================
-
       const response = await axios.get(
         `${API_URL}/files/recent`,
         {
@@ -561,10 +591,6 @@ const useAuthStore = create((set) => ({
 
       const files =
         response.data.files || [];
-
-      // ========================================
-      // SAVE RECENT FILES
-      // ========================================
 
       set({
         recentFiles: files,
@@ -629,10 +655,6 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      // ========================================
-      // GET PINNED FILES
-      // ========================================
-
       const response = await axios.get(
         `${API_URL}/files/pinned`,
         {
@@ -649,10 +671,6 @@ const useAuthStore = create((set) => ({
 
       const files =
         response.data.files || [];
-
-      // ========================================
-      // SAVE PINNED FILES
-      // ========================================
 
       set({
         pinnedFiles: files,
@@ -716,10 +734,6 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      // ========================================
-      // TOGGLE PIN ON BACKEND
-      // ========================================
-
       const response = await axios.patch(
         `${API_URL}/files/${fileId}/pin`,
         {},
@@ -743,15 +757,7 @@ const useAuthStore = create((set) => ({
         updatedFile?.isPinned ??
         false;
 
-      // ========================================
-      // UPDATE STORE
-      // ========================================
-
       set((state) => {
-        // --------------------------------------
-        // UPDATE RECENT FILE
-        // --------------------------------------
-
         const updatedRecentFiles =
           state.recentFiles.map(
             (file) =>
@@ -763,15 +769,10 @@ const useAuthStore = create((set) => ({
                 : file
           );
 
-        // --------------------------------------
-        // UPDATE PINNED FILES
-        // --------------------------------------
-
         let updatedPinnedFiles =
           state.pinnedFiles;
 
         if (isPinned) {
-          // Add file if it is now pinned
           const alreadyPinned =
             state.pinnedFiles.some(
               (file) =>
@@ -796,7 +797,6 @@ const useAuthStore = create((set) => ({
             }
           }
         } else {
-          // Remove file if it was unpinned
           updatedPinnedFiles =
             state.pinnedFiles.filter(
               (file) =>
@@ -807,10 +807,8 @@ const useAuthStore = create((set) => ({
         return {
           recentFiles:
             updatedRecentFiles,
-
           pinnedFiles:
             updatedPinnedFiles,
-
           error: null,
         };
       });
@@ -891,9 +889,15 @@ const useAuthStore = create((set) => ({
       const user =
         response.data.user;
 
+      const userBrandColor =
+        user?.brandColor || "purple";
+
       set({
         user,
         token,
+        brandColor: userBrandColor,
+        brandColorHex:
+          getBrandColor(userBrandColor),
         isLoading: false,
         error: null,
       });
@@ -924,6 +928,8 @@ const useAuthStore = create((set) => ({
           uploadedFile: null,
           recentFiles: [],
           pinnedFiles: [],
+          brandColor: "purple",
+          brandColorHex: "#A855F7",
           authReady: true,
           isLoading: false,
           error: message,
@@ -1039,10 +1045,6 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      // ========================================
-      // CHECK FILE ID
-      // ========================================
-
       if (!fileId) {
         set({
           isLoading: false,
@@ -1054,19 +1056,6 @@ const useAuthStore = create((set) => ({
           message: "File ID is required",
         };
       }
-
-      console.log(
-        "Sending text to TTS backend..."
-      );
-
-      console.log(
-        "File ID:",
-        fileId
-      );
-
-      // ========================================
-      // GENERATE SPEECH
-      // ========================================
 
       const response = await axios.post(
         `${API_URL}/tts/speech`,
@@ -1084,10 +1073,6 @@ const useAuthStore = create((set) => ({
 
       let speechResponse =
         response.data;
-
-      // ========================================
-      // CHECK TTS STATUS
-      // ========================================
 
       if (
         speechResponse.pending &&
@@ -1140,10 +1125,6 @@ const useAuthStore = create((set) => ({
         );
       }
 
-      // ========================================
-      // GET AUDIO
-      // ========================================
-
       const generatedAudio =
         speechResponse.audio;
 
@@ -1195,91 +1176,99 @@ const useAuthStore = create((set) => ({
       };
     }
   },
+
   // ==========================================
-// UPDATE ACCOUNT SETTINGS
-// ==========================================
+  // UPDATE ACCOUNT SETTINGS
+  // ==========================================
 
-updateAccountSettings: async (settings) => {
-  try {
-    set({
-      isLoading: true,
-      error: null,
-    });
+  updateAccountSettings: async (settings) => {
+    try {
+      set({
+        isLoading: true,
+        error: null,
+      });
 
-    const token =
-      localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
-    if (!token) {
+      if (!token) {
+        set({
+          isLoading: false,
+          error: "Authentication required",
+        });
+
+        return {
+          success: false,
+          message:
+            "Authentication required",
+        };
+      }
+
+      const response = await axios.patch(
+        `${API_URL}/auth/settings`,
+        settings,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type":
+              "application/json",
+          },
+        }
+      );
+
+      const updatedUser =
+        response.data.user;
+
+      // ========================================
+      // UPDATE BRAND COLOR IMMEDIATELY
+      // ========================================
+
+      const updatedBrandColor =
+        updatedUser?.brandColor ||
+        settings?.brandColor ||
+        "purple";
+
+      set({
+        user: updatedUser,
+        brandColor: updatedBrandColor,
+        brandColorHex:
+          getBrandColor(updatedBrandColor),
+        isLoading: false,
+        error: null,
+      });
+
+      return {
+        success: true,
+        user: updatedUser,
+        brandColor: updatedBrandColor,
+        brandColorHex:
+          getBrandColor(updatedBrandColor),
+        message:
+          response.data.message ||
+          "Settings updated successfully",
+      };
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update settings";
+
+      console.error(
+        "Update account settings failed:",
+        error
+      );
+
       set({
         isLoading: false,
-        error: "Authentication required",
+        error: message,
       });
 
       return {
         success: false,
-        message:
-          "Authentication required",
+        message,
       };
     }
-
-    // ========================================
-    // UPDATE SETTINGS
-    // ========================================
-
-    const response = await axios.patch(
-      `${API_URL}/auth/settings`,
-      settings,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type":
-            "application/json",
-        },
-      }
-    );
-
-    const updatedUser =
-      response.data.user;
-
-    // ========================================
-    // UPDATE USER IN STORE
-    // ========================================
-
-    set({
-      user: updatedUser,
-      isLoading: false,
-      error: null,
-    });
-
-    return {
-      success: true,
-      user: updatedUser,
-      message:
-        response.data.message ||
-        "Settings updated successfully",
-    };
-  } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to update settings";
-
-    console.error(
-      "Update account settings failed:",
-      error
-    );
-
-    set({
-      isLoading: false,
-      error: message,
-    });
-
-    return {
-      success: false,
-      message,
-    };
-  }
-},
+  },
 }));
 
 export default useAuthStore;

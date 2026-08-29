@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
 import { useTheme } from "../context/UseTheme.jsx";
-import useAuthStore from "../stores/authStore.js";
+import useAuthStore, {
+  brandColors,
+} from "../stores/authStore.js";
 
 // ==========================================
 // CHECK ICON
@@ -90,74 +92,80 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     (state) => state.updateAccountSettings
   );
 
-  const isLoading = useAuthStore(
-    (state) => state.isLoading
+  const isLoading = useAuthStore((state) => state.isLoading);
+
+  // Get the centralized brand color from Zustand
+  const storeBrandColor = useAuthStore(
+    (state) => state.brandColor
+  );
+
+  const brandColorHex = useAuthStore(
+    (state) => state.brandColorHex
   );
 
   // ========================================
   // LOCAL STATE
   // ========================================
 
-  const [isEditingName, setIsEditingName] =
-    useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
 
-  const [displayName, setDisplayName] =
-    useState("");
+  const [displayName, setDisplayName] = useState("");
 
-  const [officialName, setOfficialName] =
-    useState("");
+  const [officialName, setOfficialName] = useState("");
 
-  const [voiceModel, setVoiceModel] =
-    useState("male");
+  const [voiceModel, setVoiceModel] = useState("male");
 
-  const [accent, setAccent] =
-    useState("american");
+  const [accent, setAccent] = useState("american");
 
-  const [brandColor, setBrandColor] =
-    useState("purple");
+  const [brandColor, setBrandColor] = useState("purple");
 
-  const [saveError, setSaveError] =
-    useState("");
+  const [saveError, setSaveError] = useState("");
 
   // ========================================
   // LOAD USER SETTINGS
   // ========================================
 
   useEffect(() => {
-    if (user && isOpen) {
-      // Official name from Google account
-      setOfficialName(user.name || "");
+    if (!user || !isOpen) return;
 
-      // Editable display name
-      setDisplayName(
-        user.displayName ||
-          user.onboarding?.displayName ||
-          user.name ||
-          ""
-      );
+    // Official Google/account name
+    setOfficialName(user.name || "");
 
-      setVoiceModel(
-        user.voice ||
-          user.onboarding?.preferredVoiceGender ||
-          "male"
-      );
+    // Editable display name
+    setDisplayName(
+      user.displayName ||
+        user.onboarding?.displayName ||
+        user.name ||
+        ""
+    );
 
-      setAccent(
-        user.accent ||
-          user.onboarding?.preferredAccent ||
-          "american"
-      );
+    // Voice
+    setVoiceModel(
+      user.voice ||
+        user.preferredVoiceGender ||
+        user.onboarding?.preferredVoiceGender ||
+        "male"
+    );
 
-      setBrandColor(
-        user.brandColor ||
-          user.onboarding?.brandColor ||
-          "purple"
-      );
+    // Accent
+    setAccent(
+      user.accent ||
+        user.preferredAccent ||
+        user.onboarding?.preferredAccent ||
+        "american"
+    );
 
-      setIsEditingName(false);
-      setSaveError("");
-    }
-  }, [user, isOpen]);
+    // Brand color
+    setBrandColor(
+      user.brandColor ||
+        user.onboarding?.brandColor ||
+        storeBrandColor ||
+        "purple"
+    );
+
+    setIsEditingName(false);
+    setSaveError("");
+  }, [user, isOpen, storeBrandColor]);
 
   // ========================================
   // DON'T RENDER
@@ -171,8 +179,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
   const email = user?.email || "";
 
-  const profilePicture =
-    user?.profilePicture || null;
+  const profilePicture = user?.profilePicture || null;
 
   // ========================================
   // ACTIVE BRAND STYLE
@@ -180,39 +187,19 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
   const activeBrand =
     brandColorStyles[brandColor] ||
+    brandColorStyles[storeBrandColor] ||
     brandColorStyles.purple;
 
   // ========================================
-  // BRAND COLORS
+  // ACTIVE HEX COLOR
   // ========================================
 
-  const brandColors = [
-    {
-      id: "purple",
-      label: "Purple",
-      class: "bg-purple-500",
-    },
-    {
-      id: "blue",
-      label: "Blue",
-      class: "bg-blue-500",
-    },
-    {
-      id: "coral",
-      label: "Coral",
-      class: "bg-rose-400",
-    },
-    {
-      id: "pink",
-      label: "Pink",
-      class: "bg-pink-500",
-    },
-    {
-      id: "teal",
-      label: "Teal",
-      class: "bg-cyan-400",
-    },
-  ];
+  const activeBrandHex =
+    brandColors.find(
+      (color) => color.id === brandColor
+    )?.color ||
+    brandColorHex ||
+    "#A855F7";
 
   // ========================================
   // SAVE SETTINGS
@@ -222,30 +209,23 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     setSaveError("");
 
     if (!displayName.trim()) {
-      setSaveError(
-        "Display name is required"
-      );
-
+      setSaveError("Display name is required");
       return;
     }
 
-    const result =
-      await updateAccountSettings({
-        displayName: displayName.trim(),
+    const result = await updateAccountSettings({
+      displayName: displayName.trim(),
 
-        preferredVoiceGender:
-          voiceModel,
+      preferredVoiceGender: voiceModel,
 
-        preferredAccent:
-          accent,
+      preferredAccent: accent,
 
-        brandColor,
-      });
+      brandColor,
+    });
 
-    if (!result.success) {
+    if (!result?.success) {
       setSaveError(
-        result.message ||
-          "Failed to save settings"
+        result?.message || "Failed to save settings"
       );
 
       return;
@@ -262,7 +242,6 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
   const handleLogout = () => {
     logout();
-
     onClose?.();
   };
 
@@ -271,7 +250,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
       className="
         fixed
         inset-0
-        z-50
+        z-[100]
         flex
         items-center
         justify-center
@@ -280,17 +259,20 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
         backdrop-blur-sm
         dark:bg-black/70
       "
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) {
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
           onClose?.();
         }
       }}
     >
+      {/* ======================================
+          MODAL
+      ====================================== */}
+
       <div
         className="
-          relative
           flex
-          max-h-[92vh]
+          max-h-[90vh]
           w-full
           max-w-3xl
           flex-col
@@ -300,11 +282,13 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
           border-gray-200
           bg-white
           shadow-2xl
-          dark:border-white/10
+          dark:border-[#222]
           dark:bg-[#0f0f0f]
         "
       >
-        {/* SCROLLABLE CONTENT */}
+        {/* ======================================
+            SCROLLABLE CONTENT
+        ====================================== */}
 
         <div
           className="
@@ -382,11 +366,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                   stroke="currentColor"
                   strokeWidth="1.8"
                 >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="4"
-                  />
+                  <circle cx="12" cy="12" r="4" />
 
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
                 </svg>
@@ -394,11 +374,12 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className={`relative h-5 w-9 rounded-full transition-colors ${
-                    darkMode
-                      ? activeBrand.bg
-                      : "bg-gray-400"
-                  }`}
+                  className="relative h-5 w-9 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: darkMode
+                      ? activeBrandHex
+                      : "#9ca3af",
+                  }}
                   aria-label="Toggle theme"
                 >
                   <span
@@ -447,6 +428,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                   dark:hover:bg-[#252525]
                   dark:hover:text-white
                 "
+                aria-label="Close settings"
               >
                 <svg
                   className="h-4 w-4"
@@ -495,7 +477,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                 />
               ) : (
                 <div
-                  className={`
+                  className="
                     flex
                     h-14
                     w-14
@@ -503,12 +485,13 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                     items-center
                     justify-center
                     rounded-full
-                    ${activeBrand.bg}
-                    bg-opacity-20
                     text-lg
                     font-semibold
-                    ${activeBrand.text}
-                  `}
+                  "
+                  style={{
+                    color: activeBrandHex,
+                    backgroundColor: `${activeBrandHex}20`,
+                  }}
                 >
                   {displayName
                     .charAt(0)
@@ -525,16 +508,15 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                   <input
                     type="text"
                     value={displayName}
-                    onChange={(e) =>
-                      setDisplayName(e.target.value)
+                    onChange={(event) =>
+                      setDisplayName(event.target.value)
                     }
                     autoFocus
-                    className={`
+                    className="
                       w-full
                       max-w-[220px]
                       rounded-lg
                       border
-                      ${activeBrand.border}
                       bg-white
                       px-3
                       py-1.5
@@ -544,7 +526,10 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                       outline-none
                       dark:bg-[#1a1a1a]
                       dark:text-white
-                    `}
+                    "
+                    style={{
+                      borderColor: activeBrandHex,
+                    }}
                   />
                 ) : (
                   <p
@@ -592,16 +577,16 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                 </p>
               </div>
 
-              {/* EDIT DISPLAY NAME */}
+              {/* EDIT */}
 
               <button
                 type="button"
                 onClick={() =>
                   setIsEditingName(
-                    !isEditingName
+                    (current) => !current
                   )
                 }
-                className={`
+                className="
                   flex
                   h-9
                   w-9
@@ -610,12 +595,15 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                   justify-center
                   rounded-full
                   transition-colors
-                  ${
-                    isEditingName
-                      ? `${activeBrand.bg} text-white`
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900 dark:bg-[#1a1a1a] dark:text-gray-400 dark:hover:bg-[#252525] dark:hover:text-white"
-                  }
-                `}
+                "
+                style={{
+                  backgroundColor: isEditingName
+                    ? activeBrandHex
+                    : undefined,
+                  color: isEditingName
+                    ? "#ffffff"
+                    : activeBrandHex,
+                }}
                 aria-label="Edit display name"
               >
                 <svg
@@ -637,20 +625,23 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
             <button
               type="button"
-              className={`
+              className="
                 flex
                 items-center
                 justify-center
                 gap-2
                 rounded-xl
-                ${activeBrand.button}
                 px-5
                 py-2.5
                 text-sm
                 font-medium
                 text-white
                 transition-colors
-              `}
+                hover:opacity-90
+              "
+              style={{
+                backgroundColor: activeBrandHex,
+              }}
             >
               <svg
                 className="h-4 w-4"
@@ -699,36 +690,69 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                 dark:text-gray-400
               "
             >
-              Choose a voice and accent to personalize your experience.
+              Choose a voice and accent to personalize
+              your experience.
             </p>
 
             <div className="grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
-              {["male", "female"].map(
-                (voice) => (
-                  <button
-                    key={voice}
-                    type="button"
-                    onClick={() =>
-                      setVoiceModel(voice)
-                    }
-                    className={`relative flex min-h-[56px] items-center rounded-xl px-5 py-4 text-sm font-medium capitalize transition-all ${
+              {["male", "female"].map((voice) => (
+                <button
+                  key={voice}
+                  type="button"
+                  onClick={() =>
+                    setVoiceModel(voice)
+                  }
+                  className={`
+                    relative
+                    flex
+                    min-h-[56px]
+                    items-center
+                    rounded-xl
+                    px-5
+                    py-4
+                    text-sm
+                    font-medium
+                    capitalize
+                    transition-all
+                    ${
                       voiceModel === voice
-                        ? `border-2 ${activeBrand.border} text-gray-900 dark:text-white`
+                        ? "border-2 text-gray-900 dark:text-white"
                         : "border border-transparent bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:text-gray-300 dark:hover:bg-[#222]"
-                    }`}
-                  >
-                    {voice}
+                    }
+                  `}
+                  style={
+                    voiceModel === voice
+                      ? {
+                          borderColor:
+                            activeBrandHex,
+                        }
+                      : undefined
+                  }
+                >
+                  {voice}
 
-                    {voiceModel === voice && (
-                      <span
-                        className={`absolute right-3 flex h-5 w-5 items-center justify-center rounded-full ${activeBrand.bg}`}
-                      >
-                        <CheckIcon />
-                      </span>
-                    )}
-                  </button>
-                )
-              )}
+                  {voiceModel === voice && (
+                    <span
+                      className="
+                        absolute
+                        right-3
+                        flex
+                        h-5
+                        w-5
+                        items-center
+                        justify-center
+                        rounded-full
+                      "
+                      style={{
+                        backgroundColor:
+                          activeBrandHex,
+                      }}
+                    >
+                      <CheckIcon />
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -771,11 +795,30 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                   onClick={() =>
                     setAccent(item.id)
                   }
-                  className={`relative flex min-h-[120px] flex-col items-start rounded-xl p-5 text-left transition-all ${
+                  className={`
+                    relative
+                    flex
+                    min-h-[120px]
+                    flex-col
+                    items-start
+                    rounded-xl
+                    p-5
+                    text-left
+                    transition-all
+                    ${
+                      accent === item.id
+                        ? "border-2"
+                        : "border border-transparent bg-gray-100 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:hover:bg-[#222]"
+                    }
+                  `}
+                  style={
                     accent === item.id
-                      ? `border-2 ${activeBrand.border}`
-                      : "border border-transparent bg-gray-100 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:hover:bg-[#222]"
-                  }`}
+                      ? {
+                          borderColor:
+                            activeBrandHex,
+                        }
+                      : undefined
+                  }
                 >
                   <span className="mb-3 text-2xl">
                     {item.flag}
@@ -791,7 +834,21 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
                   {accent === item.id && (
                     <span
-                      className={`absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full ${activeBrand.bg}`}
+                      className="
+                        absolute
+                        right-3
+                        top-3
+                        flex
+                        h-5
+                        w-5
+                        items-center
+                        justify-center
+                        rounded-full
+                      "
+                      style={{
+                        backgroundColor:
+                          activeBrandHex,
+                      }}
                     >
                       <CheckIcon />
                     </span>
@@ -815,7 +872,14 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
               Brand color
             </h3>
 
-            <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">
+            <p
+              className="
+                mb-5
+                text-sm
+                text-gray-500
+                dark:text-gray-400
+              "
+            >
               Select your brand color
             </p>
 
@@ -837,13 +901,20 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                   "
                 >
                   <div
-                    className={`h-11 w-11 rounded-full ${
-                      color.class
-                    } transition-all ${
-                      brandColor === color.id
-                        ? `ring-2 ${activeBrand.ring} ring-offset-2 ring-offset-white dark:ring-offset-[#0f0f0f]`
-                        : "hover:scale-110"
-                    }`}
+                    className="
+                      h-11
+                      w-11
+                      rounded-full
+                      transition-all
+                    "
+                    style={{
+                      backgroundColor:
+                        color.color,
+                      boxShadow:
+                        brandColor === color.id
+                          ? `0 0 0 2px white, 0 0 0 4px ${color.color}`
+                          : "none",
+                    }}
                   />
 
                   <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -863,7 +934,9 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
           )}
         </div>
 
-        {/* FOOTER */}
+        {/* ======================================
+            FOOTER
+        ====================================== */}
 
         <div
           className="
@@ -954,13 +1027,12 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
             type="button"
             onClick={handleSave}
             disabled={isLoading}
-            className={`
+            className="
               flex
               items-center
               justify-center
               gap-2
               rounded-xl
-              ${activeBrand.button}
               px-5
               py-2.5
               text-sm
@@ -972,7 +1044,10 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
               active:scale-[0.98]
               disabled:cursor-not-allowed
               disabled:opacity-60
-            `}
+            "
+            style={{
+              backgroundColor: activeBrandHex,
+            }}
           >
             <svg
               className="h-4 w-4"

@@ -1,75 +1,70 @@
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+
 import { assets } from "../assets/assets.js";
 import useAuthStore from "../stores/authStore.js";
 import AccountSettingsModal from "./AccountSettingsModal.jsx";
 
+// ==========================================
+// COMPONENT
+// ==========================================
+
 const DashboardSidebar = ({ isOpen = false, onClose }) => {
-  // ==========================================
+  // ========================================
   // NAVIGATION
-  // ==========================================
+  // ========================================
 
   const navigate = useNavigate();
 
-  // ==========================================
+  // ========================================
   // AUTH STORE
-  // ==========================================
+  // ========================================
 
   const user = useAuthStore((state) => state.user);
 
-  const getCurrentUser = useAuthStore(
-    (state) => state.getCurrentUser
-  );
+  const getCurrentUser = useAuthStore((state) => state.getCurrentUser);
 
-  // ==========================================
+  // ========================================
+  // BRAND COLOR
+  // ========================================
+
+  const brandColorHex = useAuthStore((state) => state.brandColorHex);
+
+  // ========================================
   // RECENT FILES
-  // ==========================================
+  // ========================================
 
-  const recentFiles = useAuthStore(
-    (state) => state.recentFiles
-  );
+  const recentFiles = useAuthStore((state) => state.recentFiles);
 
-  const getRecentFiles = useAuthStore(
-    (state) => state.getRecentFiles
-  );
+  const getRecentFiles = useAuthStore((state) => state.getRecentFiles);
 
-  // ==========================================
+  // ========================================
   // PINNED FILES
-  // ==========================================
+  // ========================================
 
-  const pinnedFiles = useAuthStore(
-    (state) => state.pinnedFiles
-  );
+  const pinnedFiles = useAuthStore((state) => state.pinnedFiles);
 
-  const getPinnedFiles = useAuthStore(
-    (state) => state.getPinnedFiles
-  );
+  const getPinnedFiles = useAuthStore((state) => state.getPinnedFiles);
 
-  const togglePin = useAuthStore(
-    (state) => state.togglePin
-  );
+  const togglePin = useAuthStore((state) => state.togglePin);
 
-  // ==========================================
+  // ========================================
   // LOADING
-  // ==========================================
+  // ========================================
 
-  const isLoading = useAuthStore(
-    (state) => state.isLoading
-  );
+  const isLoading = useAuthStore((state) => state.isLoading);
 
-  // ==========================================
+  // ========================================
   // LOCAL STATE
-  // ==========================================
+  // ========================================
 
-  const [failedProfilePicture, setFailedProfilePicture] =
-    useState(null);
+  const [failedProfilePicture, setFailedProfilePicture] = useState(null);
 
-  const [isSettingsOpen, setIsSettingsOpen] =
-    useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // ==========================================
+  // ========================================
   // GET CURRENT USER
-  // ==========================================
+  // ========================================
 
   useEffect(() => {
     if (!user) {
@@ -77,108 +72,99 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
     }
   }, [user, getCurrentUser]);
 
-  // ==========================================
+  // ========================================
   // GET RECENT + PINNED FILES
-  // ==========================================
+  // ========================================
 
   useEffect(() => {
-    if (user) {
-      getRecentFiles();
-      getPinnedFiles();
-    }
-  }, [
-    user,
-    getRecentFiles,
-    getPinnedFiles,
-  ]);
+    if (!user) return;
 
-  // ==========================================
+    getRecentFiles();
+    getPinnedFiles();
+  }, [user, getRecentFiles, getPinnedFiles]);
+
+  // ========================================
   // USER INFORMATION
-  // ==========================================
+  // ========================================
 
-  const displayName = user?.name || "User";
+  // Official account name comes first.
+  // Other names are only fallbacks.
+  const displayName =
+    user?.name || user?.displayName || user?.onboarding?.displayName || "User";
 
   const email = user?.email || "";
 
-  const profilePicture =
-    user?.profilePicture || null;
+  const profilePicture = user?.profilePicture || null;
 
-  // ==========================================
+  // ========================================
   // NEW FILE
-  // ==========================================
+  // ========================================
 
   const handleNewFile = () => {
     navigate("/dashboard?newFile=true");
-    onClose?.();
-  };
-
-  // ==========================================
-  // OPEN FILE
-  // ==========================================
-
-  const handleOpenFile = (file) => {
-    const fileId = getFileId(file);
-
-    if (!fileId) {
-      return;
-    }
-
-    navigate(
-      `/dashboard/reading?fileId=${fileId}`
-    );
 
     onClose?.();
   };
 
-  // ==========================================
+  // ========================================
   // GET FILE ID
-  // ==========================================
+  // ========================================
 
   const getFileId = (file) => {
     return file?.id || file?._id;
   };
 
-  // ==========================================
+  // ========================================
+  // OPEN FILE
+  // ========================================
+
+  const handleOpenFile = (file) => {
+    const fileId = getFileId(file);
+
+    if (!fileId) return;
+
+    navigate(`/dashboard/reading?fileId=${encodeURIComponent(fileId)}`);
+
+    onClose?.();
+  };
+
+  // ========================================
   // CHECK IF FILE IS PINNED
-  // ==========================================
+  // ========================================
 
   const isFilePinned = (file) => {
     const fileId = getFileId(file);
 
-    if (!fileId) {
-      return false;
-    }
+    if (!fileId) return false;
 
     return pinnedFiles.some(
-      (pinnedFile) =>
-        getFileId(pinnedFile) === fileId
+      (pinnedFile) => String(getFileId(pinnedFile)) === String(fileId),
     );
   };
 
-  // ==========================================
+  // ========================================
   // PIN / UNPIN FILE
-  // ==========================================
+  // ========================================
 
-  const handleTogglePin = async (
-    event,
-    file
-  ) => {
+  const handleTogglePin = async (event, file) => {
     event.stopPropagation();
 
     const fileId = getFileId(file);
 
-    if (!fileId) {
-      return;
-    }
+    if (!fileId) return;
 
     await togglePin(fileId);
   };
 
+  // ========================================
+  // RENDER
+  // ========================================
+
   return (
     <>
-      {/* ==========================================
+      {/* ======================================
           MOBILE BACKDROP
-      ========================================== */}
+      ====================================== */}
 
       {isOpen && (
         <button
@@ -196,11 +182,14 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
         />
       )}
 
-      {/* ==========================================
+      {/* ======================================
           SIDEBAR
-      ========================================== */}
+      ====================================== */}
 
       <aside
+        style={{
+          "--brand-color": brandColorHex,
+        }}
         className={`
           fixed
           inset-y-0
@@ -226,11 +215,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           dark:border-[#1d1d1d]
           dark:bg-[#080808]
 
-          ${
-            isOpen
-              ? "translate-x-0"
-              : "-translate-x-full"
-          }
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
 
           lg:static
           lg:h-screen
@@ -241,19 +226,23 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           lg:shrink-0
         `}
       >
-        {/* ==========================================
+        {/* ======================================
             LOGO + CLOSE
-        ========================================== */}
+        ====================================== */}
 
         <div
           className="
             flex
-            h-16
+            h-[76px]
             shrink-0
             items-center
             justify-between
             px-4
+            pt-3
             sm:px-5
+            lg:h-[80px]
+            lg:px-5
+            lg:pt-4
           "
         >
           {/* LOGO */}
@@ -304,10 +293,8 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               hover:bg-gray-100
               hover:text-gray-800
               active:scale-95
-
               dark:hover:bg-[#1a1a1a]
               dark:hover:text-gray-200
-
               lg:hidden
             "
             aria-label="Close sidebar"
@@ -327,11 +314,18 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           </button>
         </div>
 
-        {/* ==========================================
+        {/* ======================================
             SEARCH
-        ========================================== */}
+        ====================================== */}
 
-        <div className="shrink-0 px-3 pb-4 sm:px-4">
+        <div
+          className="
+            shrink-0
+            px-3
+            pb-4
+            sm:px-4
+          "
+        >
           <div className="relative">
             <svg
               className="
@@ -352,6 +346,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               strokeLinejoin="round"
             >
               <circle cx="11" cy="11" r="7" />
+
               <path d="m20 20-4-4" />
             </svg>
 
@@ -373,63 +368,66 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 transition-all
                 placeholder:text-gray-400
 
-                focus:border-[#7c3aed]
+                focus:border-[var(--brand-color)]
                 focus:bg-white
-                focus:shadow-[0_0_0_3px_rgba(124,58,237,0.15)]
 
                 dark:border-[#252525]
                 dark:bg-[#111111]
                 dark:text-gray-200
                 dark:placeholder:text-gray-500
-                dark:focus:border-[#8b5cf6]
+
+                dark:focus:border-[var(--brand-color)]
                 dark:focus:bg-[#0f0f0f]
-                dark:focus:shadow-[0_0_0_3px_rgba(139,92,246,0.2)]
               "
             />
           </div>
         </div>
 
-        {/* ==========================================
+        {/* ======================================
             NEW FILE
-        ========================================== */}
+        ====================================== */}
 
-        <div className="shrink-0 px-3 pb-5 sm:px-4">
+        <div
+          className="
+            shrink-0
+            px-3
+            pb-5
+            sm:px-4
+          "
+        >
           <button
             type="button"
             onClick={handleNewFile}
             className="
-              flex
-              h-9
-              w-full
-              cursor-pointer
-              items-center
-              gap-2
-              rounded-lg
-              px-2
-              text-[12px]
-              font-medium
-              text-gray-600
-              transition
-              hover:bg-gray-50
-              hover:text-gray-900
-              active:scale-[0.99]
-
-              dark:text-gray-400
-              dark:hover:bg-[#111111]
-              dark:hover:text-gray-200
-            "
+    flex
+    h-9
+    w-full
+    cursor-pointer
+    items-center
+    justify-center
+    gap-2
+    rounded-lg
+    bg-gradient-to-r
+    from-[#3B82F6]
+    to-[#9333EA]
+    px-2
+    text-[12px]
+    font-medium
+    text-white
+    shadow-sm
+    transition
+    hover:opacity-90
+    active:scale-[0.99]
+  "
           >
-            <span className="text-[16px] leading-none">
-              +
-            </span>
-
+            <span className="text-[16px] leading-none">+</span>
             NEW FILE
           </button>
         </div>
 
-        {/* ==========================================
+        {/* ======================================
             FILES
-        ========================================== */}
+        ====================================== */}
 
         <div
           className="
@@ -441,9 +439,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             sm:px-3
           "
         >
-          {/* ==========================================
+          {/* ====================================
               PINNED
-          ========================================== */}
+          ==================================== */}
 
           <div className="mb-5">
             <p
@@ -460,43 +458,42 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               Pinned
             </p>
 
-            {isLoading &&
-            pinnedFiles.length === 0 ? (
+            {isLoading && pinnedFiles.length === 0 ? (
               <div className="space-y-1">
                 {[1, 2].map((item) => (
                   <div
                     key={item}
                     className="
-                      flex
-                      h-8
-                      w-full
-                      items-center
-                      gap-2.5
-                      rounded-lg
-                      px-2
-                    "
+                        flex
+                        h-8
+                        w-full
+                        items-center
+                        gap-2.5
+                        rounded-lg
+                        px-2
+                      "
                   >
                     <div
                       className="
-                        h-3.5
-                        w-3.5
-                        shrink-0
-                        animate-pulse
-                        rounded
-                        bg-gray-200
-                        dark:bg-[#1d1d1d]
-                      "
+                          h-3.5
+                          w-3.5
+                          shrink-0
+                          animate-pulse
+                          rounded
+                          bg-gray-200
+                          dark:bg-[#1d1d1d]
+                        "
                     />
 
                     <div
                       className="
-                        h-3
-                        flex-1
-                        animate-pulse
-                        rounded
-                        bg-gray-200
-                        dark:bg-[#1d1d1d]
-                      "
+                          h-3
+                          flex-1
+                          animate-pulse
+                          rounded
+                          bg-gray-200
+                          dark:bg-[#1d1d1d]
+                        "
                     />
                   </div>
                 ))}
@@ -543,48 +540,47 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                     <div
                       key={fileId}
                       className="
-                        group
-                        flex
-                        w-full
-                        min-w-0
-                        items-center
-                        rounded-lg
-                        transition
-                        hover:bg-gray-50
-                        dark:hover:bg-[#111111]
-                      "
+                          group
+                          flex
+                          w-full
+                          min-w-0
+                          items-center
+                          rounded-lg
+                          transition
+                          hover:bg-gray-50
+                          dark:hover:bg-[#111111]
+                        "
                     >
                       <button
                         type="button"
-                        onClick={() =>
-                          handleOpenFile(file)
-                        }
+                        onClick={() => handleOpenFile(file)}
                         className="
-                          flex
-                          min-w-0
-                          flex-1
-                          cursor-pointer
-                          items-center
-                          gap-2.5
-                          rounded-lg
-                          px-2
-                          py-2
-                          text-left
-                          text-[12px]
-                          text-gray-700
-                          active:bg-gray-100
-
-                          dark:text-gray-300
-                          dark:active:bg-[#151515]
-                        "
+                            flex
+                            min-w-0
+                            flex-1
+                            cursor-pointer
+                            items-center
+                            gap-2.5
+                            rounded-lg
+                            px-2
+                            py-2
+                            text-left
+                            text-[12px]
+                            text-gray-700
+                            active:bg-gray-100
+                            dark:text-gray-300
+                            dark:active:bg-[#151515]
+                          "
                       >
                         <svg
+                          style={{
+                            color: brandColorHex,
+                          }}
                           className="
-                            h-3.5
-                            w-3.5
-                            shrink-0
-                            text-[#7c3aed]
-                          "
+                              h-3.5
+                              w-3.5
+                              shrink-0
+                            "
                           viewBox="0 0 24 24"
                           fill="currentColor"
                         >
@@ -594,40 +590,33 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                         </svg>
 
                         <span className="min-w-0 flex-1 truncate">
-                          {file.originalName ||
-                            file.name ||
-                            "Untitled PDF"}
+                          {file.originalName || file.name || "Untitled PDF"}
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        onClick={(event) =>
-                          handleTogglePin(
-                            event,
-                            file
-                          )
-                        }
+                        onClick={(event) => handleTogglePin(event, file)}
+                        style={{
+                          color: brandColorHex,
+                        }}
                         className="
-                          mr-1.5
-                          flex
-                          h-6
-                          w-6
-                          shrink-0
-                          cursor-pointer
-                          items-center
-                          justify-center
-                          rounded-md
-                          text-[#7c3aed]
-                          opacity-0
-                          transition-all
-                          active:scale-90
-                          group-hover:opacity-100
-
-                          hover:bg-gray-200
-
-                          dark:hover:bg-[#222222]
-                        "
+                            mr-1.5
+                            flex
+                            h-6
+                            w-6
+                            shrink-0
+                            cursor-pointer
+                            items-center
+                            justify-center
+                            rounded-md
+                            opacity-0
+                            transition-all
+                            active:scale-90
+                            group-hover:opacity-100
+                            hover:bg-gray-200
+                            dark:hover:bg-[#222222]
+                          "
                         aria-label="Unpin file"
                         title="Unpin file"
                       >
@@ -648,9 +637,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             )}
           </div>
 
-          {/* ==========================================
+          {/* ====================================
               RECENTS
-          ========================================== */}
+          ==================================== */}
 
           <div>
             <p
@@ -667,43 +656,42 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               Recents
             </p>
 
-            {isLoading &&
-            recentFiles.length === 0 ? (
+            {isLoading && recentFiles.length === 0 ? (
               <div className="space-y-1">
                 {[1, 2, 3].map((item) => (
                   <div
                     key={item}
                     className="
-                      flex
-                      h-8
-                      w-full
-                      items-center
-                      gap-2.5
-                      rounded-lg
-                      px-2
-                    "
+                        flex
+                        h-8
+                        w-full
+                        items-center
+                        gap-2.5
+                        rounded-lg
+                        px-2
+                      "
                   >
                     <div
                       className="
-                        h-3.5
-                        w-3.5
-                        shrink-0
-                        animate-pulse
-                        rounded
-                        bg-gray-200
-                        dark:bg-[#1d1d1d]
-                      "
+                          h-3.5
+                          w-3.5
+                          shrink-0
+                          animate-pulse
+                          rounded
+                          bg-gray-200
+                          dark:bg-[#1d1d1d]
+                        "
                     />
 
                     <div
                       className="
-                        h-3
-                        flex-1
-                        animate-pulse
-                        rounded
-                        bg-gray-200
-                        dark:bg-[#1d1d1d]
-                      "
+                          h-3
+                          flex-1
+                          animate-pulse
+                          rounded
+                          bg-gray-200
+                          dark:bg-[#1d1d1d]
+                        "
                     />
                   </div>
                 ))}
@@ -747,55 +735,52 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               <div className="space-y-0.5">
                 {recentFiles.map((file) => {
                   const fileId = getFileId(file);
-                  const pinned =
-                    isFilePinned(file);
+
+                  const pinned = isFilePinned(file);
 
                   return (
                     <div
                       key={fileId}
                       className="
-                        group
-                        flex
-                        w-full
-                        min-w-0
-                        items-center
-                        rounded-lg
-                        transition
-                        hover:bg-gray-50
-                        dark:hover:bg-[#111111]
-                      "
+                          group
+                          flex
+                          w-full
+                          min-w-0
+                          items-center
+                          rounded-lg
+                          transition
+                          hover:bg-gray-50
+                          dark:hover:bg-[#111111]
+                        "
                     >
                       <button
                         type="button"
-                        onClick={() =>
-                          handleOpenFile(file)
-                        }
+                        onClick={() => handleOpenFile(file)}
                         className="
-                          flex
-                          min-w-0
-                          flex-1
-                          cursor-pointer
-                          items-center
-                          gap-2.5
-                          rounded-lg
-                          px-2
-                          py-2
-                          text-left
-                          text-[12px]
-                          text-gray-700
-                          active:bg-gray-100
-
-                          dark:text-gray-300
-                          dark:active:bg-[#151515]
-                        "
+                            flex
+                            min-w-0
+                            flex-1
+                            cursor-pointer
+                            items-center
+                            gap-2.5
+                            rounded-lg
+                            px-2
+                            py-2
+                            text-left
+                            text-[12px]
+                            text-gray-700
+                            active:bg-gray-100
+                            dark:text-gray-300
+                            dark:active:bg-[#151515]
+                          "
                       >
                         <svg
                           className="
-                            h-3.5
-                            w-3.5
-                            shrink-0
-                            text-gray-400
-                          "
+                              h-3.5
+                              w-3.5
+                              shrink-0
+                              text-gray-400
+                            "
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -811,64 +796,43 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                         </svg>
 
                         <span className="min-w-0 flex-1 truncate">
-                          {file.originalName ||
-                            file.name ||
-                            "Untitled PDF"}
+                          {file.originalName || file.name || "Untitled PDF"}
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        onClick={(event) =>
-                          handleTogglePin(
-                            event,
-                            file
-                          )
-                        }
+                        onClick={(event) => handleTogglePin(event, file)}
+                        style={{
+                          color: pinned ? brandColorHex : undefined,
+                        }}
                         className={`
-                          mr-1.5
-                          flex
-                          h-6
-                          w-6
-                          shrink-0
-                          cursor-pointer
-                          items-center
-                          justify-center
-                          rounded-md
-                          transition-all
-                          active:scale-90
-
-                          ${
-                            pinned
-                              ? "text-[#7c3aed] opacity-100"
-                              : "text-gray-400 opacity-0 group-hover:opacity-100"
-                          }
-
-                          hover:bg-gray-200
-                          hover:text-[#7c3aed]
-
-                          dark:hover:bg-[#222222]
-                          dark:hover:text-[#a78bfa]
-                        `}
-                        aria-label={
-                          pinned
-                            ? "Unpin file"
-                            : "Pin file"
-                        }
-                        title={
-                          pinned
-                            ? "Unpin file"
-                            : "Pin file"
-                        }
+                            mr-1.5
+                            flex
+                            h-6
+                            w-6
+                            shrink-0
+                            cursor-pointer
+                            items-center
+                            justify-center
+                            rounded-md
+                            transition-all
+                            active:scale-90
+                            ${
+                              pinned
+                                ? "opacity-100"
+                                : "text-gray-400 opacity-0 group-hover:opacity-100"
+                            }
+                            hover:bg-gray-200
+                            dark:hover:bg-[#222222]
+                          `}
+                        aria-label={pinned ? "Unpin file" : "Pin file"}
+                        title={pinned ? "Unpin file" : "Pin file"}
                       >
                         <svg
                           className="h-3.5 w-3.5"
                           viewBox="0 0 24 24"
-                          fill={
-                            pinned
-                              ? "currentColor"
-                              : "none"
-                          }
+                          fill={pinned ? "currentColor" : "none"}
                           stroke="currentColor"
                           strokeWidth="1.8"
                           strokeLinecap="round"
@@ -887,50 +851,51 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           </div>
         </div>
 
-        {/* ==========================================
+        {/* ======================================
             BOTTOM
-        ========================================== */}
+        ====================================== */}
 
         <div
           className="
             shrink-0
             border-t
             border-gray-200
-            p-3
+            px-3
+            pb-4
+            pt-4
             dark:border-[#1d1d1d]
-            sm:p-3.5
+            sm:px-3.5
+            sm:pb-4.5
+            sm:pt-4
           "
         >
-          {/* ==========================================
-              UPGRADE
-          ========================================== */}
+          {/* UPGRADE */}
 
           <NavLink
             to="/plan-comparison"
             onClick={onClose}
             className="
-              mb-3
-              flex
-              h-10
-              w-full
-              cursor-pointer
-              items-center
-              justify-center
-              gap-2
-              rounded-lg
-              bg-gradient-to-r
-              from-[#3B82F6]
-              to-[#9333EA]
-              px-2
-              text-[11px]
-              font-medium
-              text-white
-              transition
-              hover:opacity-90
-              active:scale-[0.98]
-
-              sm:text-[12px]
-            "
+    mb-4
+    flex
+    h-10
+    w-full
+    cursor-pointer
+    items-center
+    justify-center
+    gap-2
+    rounded-lg
+    bg-gradient-to-r
+    from-[#3B82F6]
+    to-[#9333EA]
+    px-2
+    text-[11px]
+    font-medium
+    text-white
+    transition
+    hover:opacity-90
+    active:scale-[0.98]
+    sm:text-[12px]
+  "
           >
             <svg
               className="h-3.5 w-3.5 shrink-0"
@@ -943,9 +908,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             <span>Upgrade to Pro</span>
           </NavLink>
 
-          {/* ==========================================
-              USER
-          ========================================== */}
+          {/* USER */}
 
           <div
             className="
@@ -960,17 +923,11 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           >
             {/* PROFILE PICTURE */}
 
-            {profilePicture &&
-            profilePicture !==
-              failedProfilePicture ? (
+            {profilePicture && profilePicture !== failedProfilePicture ? (
               <img
                 src={profilePicture}
                 alt={displayName}
-                onError={() =>
-                  setFailedProfilePicture(
-                    profilePicture
-                  )
-                }
+                onError={() => setFailedProfilePicture(profilePicture)}
                 className="
                   h-8
                   w-8
@@ -989,22 +946,19 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   items-center
                   justify-center
                   rounded-full
-                  bg-purple-100
                   text-[12px]
                   font-semibold
-                  text-purple-600
-
-                  dark:bg-purple-500/20
-                  dark:text-purple-400
                 "
+                style={{
+                  color: brandColorHex,
+                  backgroundColor: `${brandColorHex}18`,
+                }}
               >
-                {displayName
-                  .charAt(0)
-                  .toUpperCase()}
+                {displayName.charAt(0).toUpperCase()}
               </div>
             )}
 
-            {/* USER NAME + EMAIL */}
+            {/* OFFICIAL NAME + EMAIL */}
 
             <div className="min-w-0 flex-1">
               <p
@@ -1015,6 +969,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   text-gray-900
                   dark:text-gray-100
                 "
+                title={displayName}
               >
                 {displayName}
               </p>
@@ -1024,7 +979,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   truncate
                   text-[10px]
                   text-gray-400
+                  dark:text-gray-500
                 "
+                title={email}
               >
                 {email}
               </p>
@@ -1038,6 +995,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 setIsSettingsOpen(true);
                 onClose?.();
               }}
+              style={{
+                color: brandColorHex,
+              }}
               className="
                 flex
                 h-8
@@ -1047,14 +1007,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 items-center
                 justify-center
                 rounded-lg
-                text-gray-400
                 transition
                 hover:bg-gray-100
-                hover:text-gray-700
                 active:scale-95
-
                 dark:hover:bg-[#1a1a1a]
-                dark:hover:text-gray-200
               "
               aria-label="Settings"
             >
@@ -1067,11 +1023,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="3"
-                />
+                <circle cx="12" cy="12" r="3" />
 
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.01 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
@@ -1080,15 +1032,13 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
         </div>
       </aside>
 
-      {/* ==========================================
+      {/* ======================================
           ACCOUNT SETTINGS MODAL
-      ========================================== */}
+      ====================================== */}
 
       <AccountSettingsModal
         isOpen={isSettingsOpen}
-        onClose={() =>
-          setIsSettingsOpen(false)
-        }
+        onClose={() => setIsSettingsOpen(false)}
       />
     </>
   );
