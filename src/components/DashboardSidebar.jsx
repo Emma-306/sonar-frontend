@@ -1,11 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { assets } from "../assets/assets.js";
 import useAuthStore from "../stores/authStore.js";
 
-const pinnedFiles = [
-  { name: "Meeting_Notes.pdf", path: "#" },
-];
+const pinnedFiles = [{ name: "Meeting_Notes.pdf", path: "#" }];
 
 const recentFiles = [
   { name: "Project_Notes.pdf", path: "#" },
@@ -20,9 +18,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
   const user = useAuthStore((state) => state.user);
 
-  const getCurrentUser = useAuthStore(
-    (state) => state.getCurrentUser
-  );
+  const [failedProfilePicture, setFailedProfilePicture] = useState(null);
+
+  const getCurrentUser = useAuthStore((state) => state.getCurrentUser);
 
   // ==========================================
   // GET CURRENT USER
@@ -38,8 +36,6 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   // USER INFORMATION
   // ==========================================
 
-  // Use the TOP-LEVEL name from MongoDB
-  // Example: "Emmanuel Johnny"
   const displayName = user?.name || "User";
 
   // Email from MongoDB
@@ -289,10 +285,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               dark:hover:text-gray-200
             "
           >
-            <span className="text-[16px] leading-none">
-              +
-            </span>
-
+            <span className="text-[16px] leading-none">+</span>
             NEW FILE
           </button>
         </div>
@@ -375,9 +368,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                     <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z" />
                   </svg>
 
-                  <span className="min-w-0 truncate">
-                    {file.name}
-                  </span>
+                  <span className="min-w-0 truncate">{file.name}</span>
                 </button>
               ))}
             </div>
@@ -450,9 +441,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                     <path d="M10 9H8" />
                   </svg>
 
-                  <span className="min-w-0 truncate">
-                    {file.name}
-                  </span>
+                  <span className="min-w-0 truncate">{file.name}</span>
                 </button>
               ))}
             </div>
@@ -535,10 +524,11 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           >
             {/* PROFILE PICTURE */}
 
-            {profilePicture ? (
+            {profilePicture && profilePicture !== failedProfilePicture ? (
               <img
                 src={profilePicture}
                 alt={displayName}
+                onError={() => setFailedProfilePicture(profilePicture)}
                 className="
                   h-8
                   w-8
