@@ -5,7 +5,11 @@ import axios from "axios";
 // API URL
 // ==========================================
 
-const API_URL = import.meta.env.VITE_API_URL;
+const configuredApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+const API_URL = configuredApiUrl.endsWith("/api")
+  ? configuredApiUrl
+  : `${configuredApiUrl.replace(/\/$/, "")}/api`;
 
 // ==========================================
 // AUTH STORE
