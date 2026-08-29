@@ -1,27 +1,59 @@
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets.js";
 import useAuthStore from "../stores/authStore.js";
 
-const pinnedFiles = [{ name: "Meeting_Notes.pdf", path: "#" }];
+// ==========================================
+// PINNED FILES
+// HARDCODED FOR NOW
+// ==========================================
 
-const recentFiles = [
-  { name: "Project_Notes.pdf", path: "#" },
-  { name: "Cook.pdf", path: "#" },
-  { name: "Story.pdf", path: "#" },
+const pinnedFiles = [
+  {
+    id: "pinned-meeting-notes",
+    name: "Meeting_Notes.pdf",
+  },
 ];
 
 const DashboardSidebar = ({ isOpen = false, onClose }) => {
+  // ==========================================
+  // NAVIGATION
+  // ==========================================
+
+  const navigate = useNavigate();
+
   // ==========================================
   // AUTH STORE
   // ==========================================
 
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const getCurrentUser = useAuthStore(
+    (state) => state.getCurrentUser
+  );
 
-  const [failedProfilePicture, setFailedProfilePicture] = useState(null);
+  // ==========================================
+  // RECENT FILES
+  // ==========================================
 
-  const getCurrentUser = useAuthStore((state) => state.getCurrentUser);
+  const recentFiles = useAuthStore(
+    (state) => state.recentFiles
+  );
+
+  const getRecentFiles = useAuthStore(
+    (state) => state.getRecentFiles
+  );
+
+  const isLoading = useAuthStore(
+    (state) => state.isLoading
+  );
+
+  // ==========================================
+  // LOCAL STATE
+  // ==========================================
+
+  const [failedProfilePicture, setFailedProfilePicture] =
+    useState(null);
 
   // ==========================================
   // GET CURRENT USER
@@ -34,20 +66,53 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   }, [user, getCurrentUser]);
 
   // ==========================================
+  // GET RECENT FILES
+  // ==========================================
+
+  useEffect(() => {
+    if (user) {
+      getRecentFiles();
+    }
+  }, [user, getRecentFiles]);
+
+  // ==========================================
   // USER INFORMATION
   // ==========================================
 
   const displayName = user?.name || "User";
 
-  // Email from MongoDB
-  // Example: "esquare.jay@gmail.com"
   const email = user?.email || "";
 
-  // Google profile picture from MongoDB
   const profilePicture = user?.profilePicture || null;
+
+  // ==========================================
+  // LOGOUT
+  // ==========================================
 
   const handleLogout = () => {
     logout();
+    onClose?.();
+  };
+
+  // ==========================================
+  // NEW FILE
+  // ==========================================
+
+  const handleNewFile = () => {
+    navigate("/dashboard?newFile=true");
+    onClose?.();
+  };
+
+  // ==========================================
+  // OPEN FILE
+  // ==========================================
+
+  const handleOpenFile = (file) => {
+    if (!file?.id) {
+      return;
+    }
+
+    navigate(`/dashboard/reading?fileId=${file.id}`);
     onClose?.();
   };
 
@@ -129,7 +194,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             sm:px-5
           "
         >
-          {/* Logo */}
+          {/* LOGO */}
 
           <div className="flex min-w-0 items-center">
             <img
@@ -158,7 +223,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             />
           </div>
 
-          {/* Close button - mobile only */}
+          {/* CLOSE BUTTON */}
 
           <button
             type="button"
@@ -269,6 +334,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
         <div className="shrink-0 px-3 pb-5 sm:px-4">
           <button
             type="button"
+            onClick={handleNewFile}
             className="
               flex
               h-9
@@ -291,7 +357,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               dark:hover:text-gray-200
             "
           >
-            <span className="text-[16px] leading-none">+</span>
+            <span className="text-[16px] leading-none">
+              +
+            </span>
+
             NEW FILE
           </button>
         </div>
@@ -312,73 +381,86 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
         >
           {/* ==========================================
               PINNED
+              HARDCODED FOR NOW
           ========================================== */}
 
-          <div className="mb-5">
-            <p
-              className="
-                mb-2
-                px-2
-                text-[10px]
-                font-semibold
-                uppercase
-                tracking-wider
-                text-gray-400
-              "
-            >
-              Pinned
-            </p>
+          {pinnedFiles.length > 0 && (
+            <div className="mb-5">
+              <p
+                className="
+                  mb-2
+                  px-2
+                  text-[10px]
+                  font-semibold
+                  uppercase
+                  tracking-wider
+                  text-gray-400
+                "
+              >
+                Pinned
+              </p>
 
-            <div className="space-y-0.5">
-              {pinnedFiles.map((file) => (
-                <button
-                  type="button"
-                  key={file.name}
-                  className="
-                    flex
-                    w-full
-                    min-w-0
-                    cursor-pointer
-                    items-center
-                    gap-2.5
-                    rounded-lg
-                    px-2
-                    py-2
-                    text-left
-                    text-[12px]
-                    text-gray-700
-                    transition
-                    hover:bg-gray-50
-                    active:bg-gray-100
-
-                    dark:text-gray-300
-                    dark:hover:bg-[#111111]
-                    dark:active:bg-[#151515]
-                  "
-                >
-                  <svg
+              <div className="space-y-0.5">
+                {pinnedFiles.map((file) => (
+                  <button
+                    type="button"
+                    key={file.id}
+                    onClick={() => handleOpenFile(file)}
                     className="
-                      h-3.5
-                      w-3.5
-                      shrink-0
-                      text-gray-400
-                    "
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 17v5" />
-                    <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z" />
-                  </svg>
+                      flex
+                      w-full
+                      min-w-0
+                      cursor-pointer
+                      items-center
+                      gap-2.5
+                      rounded-lg
+                      px-2
+                      py-2
+                      text-left
+                      text-[12px]
+                      text-gray-700
+                      transition
+                      hover:bg-gray-50
+                      active:bg-gray-100
 
-                  <span className="min-w-0 truncate">{file.name}</span>
-                </button>
-              ))}
+                      dark:text-gray-300
+                      dark:hover:bg-[#111111]
+                      dark:active:bg-[#151515]
+                    "
+                  >
+                    {/* PIN ICON */}
+
+                    <svg
+                      className="
+                        h-3.5
+                        w-3.5
+                        shrink-0
+                        text-gray-400
+                      "
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 17v5" />
+
+                      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z" />
+                    </svg>
+
+                    {/* FILE NAME */}
+
+                    <span className="min-w-0 truncate">
+                      {file.originalName ||
+                        file.name ||
+                        "Untitled PDF"}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ==========================================
               RECENTS
@@ -399,58 +481,164 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               Recents
             </p>
 
-            <div className="space-y-0.5">
-              {recentFiles.map((file) => (
-                <button
-                  type="button"
-                  key={file.name}
-                  className="
-                    flex
-                    w-full
-                    min-w-0
-                    cursor-pointer
-                    items-center
-                    gap-2.5
-                    rounded-lg
-                    px-2
-                    py-2
-                    text-left
-                    text-[12px]
-                    text-gray-700
-                    transition
-                    hover:bg-gray-50
-                    active:bg-gray-100
+            {/* ========================================
+                LOADING
+            ======================================== */}
 
-                    dark:text-gray-300
-                    dark:hover:bg-[#111111]
-                    dark:active:bg-[#151515]
+            {isLoading && recentFiles.length === 0 ? (
+              <div className="space-y-1">
+                {[1, 2, 3].map((item) => (
+                  <div
+                    key={item}
+                    className="
+                      flex
+                      h-8
+                      w-full
+                      items-center
+                      gap-2.5
+                      rounded-lg
+                      px-2
+                    "
+                  >
+                    <div
+                      className="
+                        h-3.5
+                        w-3.5
+                        shrink-0
+                        animate-pulse
+                        rounded
+                        bg-gray-200
+                        dark:bg-[#1d1d1d]
+                      "
+                    />
+
+                    <div
+                      className="
+                        h-3
+                        flex-1
+                        animate-pulse
+                        rounded
+                        bg-gray-200
+                        dark:bg-[#1d1d1d]
+                      "
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : recentFiles.length === 0 ? (
+              /* ========================================
+                  EMPTY STATE
+              ======================================== */
+
+              <div className="px-2 py-5 text-center">
+                <svg
+                  className="
+                    mx-auto
+                    mb-2
+                    h-6
+                    w-6
+                    text-gray-300
+                    dark:text-gray-600
+                  "
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+
+                  <path d="M14 2v6h6" />
+
+                  <path d="M16 13H8" />
+
+                  <path d="M16 17H8" />
+
+                  <path d="M10 9H8" />
+                </svg>
+
+                <p
+                  className="
+                    text-[11px]
+                    text-gray-400
+                    dark:text-gray-500
                   "
                 >
-                  <svg
-                    className="
-                      h-3.5
-                      w-3.5
-                      shrink-0
-                      text-gray-400
-                    "
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <path d="M14 2v6h6" />
-                    <path d="M16 13H8" />
-                    <path d="M16 17H8" />
-                    <path d="M10 9H8" />
-                  </svg>
+                  No recent files
+                </p>
+              </div>
+            ) : (
+              /* ========================================
+                  RECENT FILE LIST
+              ======================================== */
 
-                  <span className="min-w-0 truncate">{file.name}</span>
-                </button>
-              ))}
-            </div>
+              <div className="space-y-0.5">
+                {recentFiles.map((file) => (
+                  <button
+                    type="button"
+                    key={file.id}
+                    onClick={() => handleOpenFile(file)}
+                    className="
+                      flex
+                      w-full
+                      min-w-0
+                      cursor-pointer
+                      items-center
+                      gap-2.5
+                      rounded-lg
+                      px-2
+                      py-2
+                      text-left
+                      text-[12px]
+                      text-gray-700
+                      transition
+                      hover:bg-gray-50
+                      active:bg-gray-100
+
+                      dark:text-gray-300
+                      dark:hover:bg-[#111111]
+                      dark:active:bg-[#151515]
+                    "
+                  >
+                    {/* PDF ICON */}
+
+                    <svg
+                      className="
+                        h-3.5
+                        w-3.5
+                        shrink-0
+                        text-gray-400
+                      "
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+
+                      <path d="M14 2v6h6" />
+
+                      <path d="M16 13H8" />
+
+                      <path d="M16 17H8" />
+
+                      <path d="M10 9H8" />
+                    </svg>
+
+                    {/* FILE NAME */}
+
+                    <span className="min-w-0 truncate">
+                      {file.originalName ||
+                        file.name ||
+                        "Untitled PDF"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -464,9 +652,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             border-t
             border-gray-200
             p-3
-
             dark:border-[#1d1d1d]
-
             sm:p-3.5
           "
         >
@@ -524,17 +710,19 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               gap-2.5
               px-1
               py-1
-
               sm:gap-3
             "
           >
             {/* PROFILE PICTURE */}
 
-            {profilePicture && profilePicture !== failedProfilePicture ? (
+            {profilePicture &&
+            profilePicture !== failedProfilePicture ? (
               <img
                 src={profilePicture}
                 alt={displayName}
-                onError={() => setFailedProfilePicture(profilePicture)}
+                onError={() =>
+                  setFailedProfilePicture(profilePicture)
+                }
                 className="
                   h-8
                   w-8
@@ -575,7 +763,6 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   text-[12px]
                   font-medium
                   text-gray-900
-
                   dark:text-gray-100
                 "
               >
@@ -627,50 +814,80 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <circle cx="12" cy="12" r="3" />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="3"
+                />
 
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.01 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </NavLink>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="
-                flex
-                h-8
-                w-8
-                shrink-0
-                cursor-pointer
-                items-center
-                justify-center
-                rounded-lg
-                text-gray-400
-                transition
-                hover:bg-red-50
-                hover:text-red-600
-                active:scale-95
-                dark:hover:bg-red-500/10
-                dark:hover:text-red-400
-              "
-              aria-label="Log out"
-              title="Log out"
-            >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M10 17l5-5-5-5" />
-                <path d="M15 12H3" />
-                <path d="M21 19V5a2 2 0 0 0-2-2h-5" />
-              </svg>
-            </button>
           </div>
+
+          {/* ==========================================
+              LOGOUT
+          ========================================== */}
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="
+              mt-3
+              flex
+              h-10
+              w-full
+              cursor-pointer
+              items-center
+              justify-center
+              gap-2
+              rounded-lg
+              border
+              border-gray-200
+              bg-gray-50
+              px-2
+              text-[11px]
+              font-medium
+              text-gray-600
+              transition
+
+              hover:border-red-200
+              hover:bg-red-50
+              hover:text-red-600
+
+              active:scale-[0.98]
+
+              dark:border-[#2a2a2a]
+              dark:bg-[#151515]
+              dark:text-gray-400
+
+              dark:hover:border-red-500/20
+              dark:hover:bg-red-500/10
+              dark:hover:text-red-400
+
+              sm:text-[12px]
+            "
+            aria-label="Log out"
+            title="Log out"
+          >
+            <svg
+              className="h-3.5 w-3.5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M10 17l5-5-5-5" />
+
+              <path d="M15 12H3" />
+
+              <path d="M21 19V5a2 2 0 0 0-2-2h-5" />
+            </svg>
+
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
     </>

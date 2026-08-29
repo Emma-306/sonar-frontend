@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { assets } from "../assets/assets.js";
 import ThemeToggle from "../components/ThemeToggle";
 import useAuthStore from "../stores/authStore.js";
@@ -42,6 +45,16 @@ const Dashboard = () => {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
+  // ==========================================
+  // URL SEARCH PARAMS
+  // ==========================================
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ==========================================
+  // STATE
+  // ==========================================
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
@@ -73,6 +86,30 @@ const Dashboard = () => {
       getCurrentUser();
     }
   }, [user, getCurrentUser]);
+
+  // ==========================================
+  // OPEN FILE PICKER FROM NEW FILE
+  // ==========================================
+
+  useEffect(() => {
+    const newFile = searchParams.get("newFile");
+
+    if (newFile !== "true") return;
+
+    // Wait until the file input is available
+    const timer = setTimeout(() => {
+      if (fileInputRef.current && !isLoading) {
+        // Open the browser file picker
+        fileInputRef.current.click();
+      }
+
+      // Remove ?newFile=true from the URL
+      // without causing another page navigation
+      setSearchParams({}, { replace: true });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [searchParams, setSearchParams, isLoading]);
 
   // ==========================================
   // USER INFORMATION
@@ -117,14 +154,20 @@ const Dashboard = () => {
     setError("");
     setUploadSuccess("");
 
-    // Check PDF
+    // ==========================================
+    // CHECK PDF
+    // ==========================================
+
     if (file.type !== "application/pdf") {
       setError("Please select a PDF file.");
       event.target.value = "";
       return;
     }
 
-    // Check file size
+    // ==========================================
+    // CHECK FILE SIZE
+    // ==========================================
+
     if (file.size > MAX_FILE_SIZE) {
       setError(
         "File is too large. Please select a PDF smaller than 25MB."
@@ -133,6 +176,10 @@ const Dashboard = () => {
       event.target.value = "";
       return;
     }
+
+    // ==========================================
+    // SET SELECTED FILE
+    // ==========================================
 
     setSelectedFile(file);
   };
@@ -168,23 +215,40 @@ const Dashboard = () => {
 
       console.log("Upload result:", result);
 
+      // ==========================================
+      // UPLOAD FAILED
+      // ==========================================
+
       if (!result?.success) {
         setError(
-          result?.message || "Failed to upload PDF."
+          result?.message ||
+            "Failed to upload PDF."
         );
+
         return;
       }
+
+      // ==========================================
+      // NO FILE ID
+      // ==========================================
 
       if (!result?.fileId) {
         setError(
           "PDF uploaded successfully, but no file ID was returned."
         );
+
         return;
       }
 
+      // ==========================================
+      // FILE ID
+      // ==========================================
+
       console.log("File ID:", result.fileId);
 
-      setUploadSuccess("PDF uploaded successfully!");
+      setUploadSuccess(
+        "PDF uploaded successfully!"
+      );
 
       setSelectedFile(null);
 
@@ -192,7 +256,10 @@ const Dashboard = () => {
         fileInputRef.current.value = "";
       }
 
-      // Navigate to Reading page
+      // ==========================================
+      // NAVIGATE TO READING PAGE
+      // ==========================================
+
       navigate(
         `/dashboard/reading?fileId=${encodeURIComponent(
           result.fileId
@@ -230,7 +297,9 @@ const Dashboard = () => {
         md:py-12
       "
     >
-      {/* THEME TOGGLE */}
+      {/* ==========================================
+          THEME TOGGLE
+      ========================================== */}
 
       <div
         className="
@@ -245,7 +314,9 @@ const Dashboard = () => {
         <ThemeToggle />
       </div>
 
-      {/* SONAR ORB */}
+      {/* ==========================================
+          SONAR ORB
+      ========================================== */}
 
       <div
         className="
@@ -274,7 +345,9 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* WELCOME TEXT */}
+      {/* ==========================================
+          WELCOME TEXT
+      ========================================== */}
 
       <h1
         className="
@@ -308,7 +381,9 @@ const Dashboard = () => {
         What PDF would you like to listen to today?
       </p>
 
-      {/* UPLOAD AREA */}
+      {/* ==========================================
+          UPLOAD AREA
+      ========================================== */}
 
       <div
         className="
@@ -336,7 +411,9 @@ const Dashboard = () => {
           dark:hover:border-[#444]
         "
       >
-        {/* CLOUD ICON */}
+        {/* ==========================================
+            CLOUD ICON
+        ========================================== */}
 
         <div
           className="
@@ -369,7 +446,9 @@ const Dashboard = () => {
           </svg>
         </div>
 
-        {/* HEADING */}
+        {/* ==========================================
+            HEADING
+        ========================================== */}
 
         <p
           className="
@@ -385,7 +464,9 @@ const Dashboard = () => {
           Upload a PDF to get started
         </p>
 
-        {/* BROWSE */}
+        {/* ==========================================
+            BROWSE
+        ========================================== */}
 
         <p
           className="
@@ -423,7 +504,9 @@ const Dashboard = () => {
           )}
         </p>
 
-        {/* FILE INPUT */}
+        {/* ==========================================
+            FILE INPUT
+        ========================================== */}
 
         <input
           ref={fileInputRef}
@@ -434,7 +517,9 @@ const Dashboard = () => {
           disabled={!!selectedFile || isLoading}
         />
 
-        {/* FILE SIZE */}
+        {/* ==========================================
+            FILE SIZE
+        ========================================== */}
 
         <p
           className="
@@ -447,7 +532,9 @@ const Dashboard = () => {
           Supports .pdf files up to 25MB.
         </p>
 
-        {/* ERROR */}
+        {/* ==========================================
+            ERROR
+        ========================================== */}
 
         {error && (
           <p
@@ -465,7 +552,9 @@ const Dashboard = () => {
           </p>
         )}
 
-        {/* SUCCESS */}
+        {/* ==========================================
+            SUCCESS
+        ========================================== */}
 
         {uploadSuccess && (
           <p
@@ -484,7 +573,9 @@ const Dashboard = () => {
           </p>
         )}
 
-        {/* SELECTED FILE */}
+        {/* ==========================================
+            SELECTED FILE
+        ========================================== */}
 
         {selectedFile && !error && (
           <>
@@ -537,7 +628,9 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              {/* DELETE BUTTON */}
+              {/* ==========================================
+                  DELETE BUTTON
+              ========================================== */}
 
               <button
                 type="button"
@@ -582,7 +675,9 @@ const Dashboard = () => {
               </button>
             </div>
 
-            {/* UPLOAD BUTTON */}
+            {/* ==========================================
+                UPLOAD BUTTON
+            ========================================== */}
 
             <button
               type="button"

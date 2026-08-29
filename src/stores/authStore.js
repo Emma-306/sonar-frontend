@@ -29,27 +29,52 @@ const useAuthStore = create((set) => ({
 
   uploadedFile: null,
 
+  // ==========================================
+  // RECENT FILES
+  // ==========================================
+
+  recentFiles: [],
+
+  // ==========================================
+  // LOGOUT
+  // ==========================================
+
   logout: () => {
     localStorage.removeItem("token");
+
     set({
       user: null,
       token: null,
       uploadedFile: null,
+      recentFiles: [],
       error: null,
       authReady: true,
     });
   },
 
+  // ==========================================
+  // INITIALIZE AUTH
+  // ==========================================
+
   initializeAuth: async () => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      set({ authReady: true });
+      set({
+        authReady: true,
+        recentFiles: [],
+      });
+
       return false;
     }
 
-    const result = await useAuthStore.getState().getCurrentUser();
-    set({ authReady: true });
+    const result =
+      await useAuthStore.getState().getCurrentUser();
+
+    set({
+      authReady: true,
+    });
+
     return result.success;
   },
 
@@ -64,9 +89,12 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const response = await axios.post(`${API_URL}/auth/google`, {
-        code,
-      });
+      const response = await axios.post(
+        `${API_URL}/auth/google`,
+        {
+          code,
+        }
+      );
 
       const { token, user } = response.data;
 
@@ -85,9 +113,14 @@ const useAuthStore = create((set) => ({
         user,
       };
     } catch (error) {
-      const message = error.response?.data?.message || "Google login failed";
+      const message =
+        error.response?.data?.message ||
+        "Google login failed";
 
-      console.error("Google login request failed:", error);
+      console.error(
+        "Google login request failed:",
+        error
+      );
 
       set({
         isLoading: false,
@@ -112,7 +145,8 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
       if (!token) {
         set({
@@ -126,13 +160,18 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.post(`${API_URL}/onboarding`, preferences, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.post(
+        `${API_URL}/onboarding`,
+        preferences,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      const updatedUser = response.data.user;
+      const updatedUser =
+        response.data.user;
 
       set({
         user: updatedUser,
@@ -147,9 +186,13 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message || "Failed to complete onboarding";
+        error.response?.data?.message ||
+        "Failed to complete onboarding";
 
-      console.error("Onboarding request failed:", error);
+      console.error(
+        "Onboarding request failed:",
+        error
+      );
 
       set({
         isLoading: false,
@@ -174,7 +217,8 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
       if (!token) {
         set({
@@ -224,7 +268,8 @@ const useAuthStore = create((set) => ({
       // CHECK FILE SIZE
       // ========================================
 
-      const MAX_FILE_SIZE = 25 * 1024 * 1024;
+      const MAX_FILE_SIZE =
+        25 * 1024 * 1024;
 
       if (file.size > MAX_FILE_SIZE) {
         set({
@@ -244,30 +289,45 @@ const useAuthStore = create((set) => ({
 
       const formData = new FormData();
 
-      formData.append("file", file);
+      formData.append(
+        "file",
+        file
+      );
 
-      console.log("Uploading PDF...");
+      console.log(
+        "Uploading PDF..."
+      );
 
       // ========================================
       // UPLOAD
       // ========================================
 
-      const response = await axios.post(`${API_URL}/files/upload`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.post(
+        `${API_URL}/files/upload`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      console.log("Upload response:", response.data);
+      console.log(
+        "Upload response:",
+        response.data
+      );
 
       // ========================================
       // FILE ID
       // ========================================
 
-      const fileId = response.data.fileId;
+      const fileId =
+        response.data.fileId;
 
       if (!fileId) {
-        throw new Error("Backend did not return a file ID");
+        throw new Error(
+          "Backend did not return a file ID"
+        );
       }
 
       // ========================================
@@ -281,19 +341,49 @@ const useAuthStore = create((set) => ({
         mimeType: file.type,
       };
 
-      set({
+      // ========================================
+      // CREATE RECENT FILE
+      // ========================================
+
+      const recentFile = {
+        id: fileId,
+        originalName: file.name,
+        createdAt:
+          new Date().toISOString(),
+      };
+
+      // ========================================
+      // UPDATE UPLOADED FILE AND RECENTS
+      // ========================================
+
+      set((state) => ({
         uploadedFile,
+
+        recentFiles: [
+          recentFile,
+
+          ...state.recentFiles.filter(
+            (existingFile) =>
+              existingFile.id !== fileId
+          ),
+        ].slice(0, 5),
+
         isLoading: false,
         error: null,
-      });
+      }));
 
-      console.log("Uploaded file saved:", uploadedFile);
+      console.log(
+        "Uploaded file saved:",
+        uploadedFile
+      );
 
       return {
         success: true,
         fileId,
         file: uploadedFile,
-        message: response.data.message || "PDF uploaded successfully",
+        message:
+          response.data.message ||
+          "PDF uploaded successfully",
       };
     } catch (error) {
       const message =
@@ -301,7 +391,10 @@ const useAuthStore = create((set) => ({
         error.message ||
         "Failed to upload PDF";
 
-      console.error("PDF upload failed:", error);
+      console.error(
+        "PDF upload failed:",
+        error
+      );
 
       set({
         isLoading: false,
@@ -326,7 +419,8 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
       if (!token) {
         set({
@@ -352,18 +446,27 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.get(`${API_URL}/files/${fileId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(
+        `${API_URL}/files/${fileId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      console.log("Get file response:", response.data);
+      console.log(
+        "Get file response:",
+        response.data
+      );
 
-      const file = response.data.file;
+      const file =
+        response.data.file;
 
       if (!file) {
-        throw new Error("Backend did not return file information");
+        throw new Error(
+          "Backend did not return file information"
+        );
       }
 
       set((state) => ({
@@ -371,6 +474,7 @@ const useAuthStore = create((set) => ({
           ...state.uploadedFile,
           ...file,
         },
+
         isLoading: false,
         error: null,
       }));
@@ -381,9 +485,14 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message || error.message || "Failed to get file";
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to get file";
 
-      console.error("Get file failed:", error);
+      console.error(
+        "Get file failed:",
+        error
+      );
 
       set({
         isLoading: false,
@@ -392,6 +501,94 @@ const useAuthStore = create((set) => ({
 
       return {
         success: false,
+        message,
+      };
+    }
+  },
+
+  // ==========================================
+  // GET RECENT FILES
+  // ==========================================
+
+  getRecentFiles: async () => {
+    try {
+      set({
+        isLoading: true,
+        error: null,
+      });
+
+      const token =
+        localStorage.getItem("token");
+
+      if (!token) {
+        set({
+          isLoading: false,
+          error: "Authentication required",
+          recentFiles: [],
+        });
+
+        return {
+          success: false,
+          files: [],
+          message: "Authentication required",
+        };
+      }
+
+      // ========================================
+      // GET RECENT FILES FROM BACKEND
+      // ========================================
+
+      const response = await axios.get(
+        `${API_URL}/files/recent`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log(
+        "Recent files response:",
+        response.data
+      );
+
+      const files =
+        response.data.files || [];
+
+      // ========================================
+      // SAVE RECENT FILES
+      // ========================================
+
+      set({
+        recentFiles: files,
+        isLoading: false,
+        error: null,
+      });
+
+      return {
+        success: true,
+        files,
+      };
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to get recent files";
+
+      console.error(
+        "Get recent files failed:",
+        error
+      );
+
+      set({
+        recentFiles: [],
+        isLoading: false,
+        error: message,
+      });
+
+      return {
+        success: false,
+        files: [],
         message,
       };
     }
@@ -414,7 +611,8 @@ const useAuthStore = create((set) => ({
 
   getCurrentUser: async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
       if (!token) {
         return {
@@ -428,13 +626,17 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const response = await axios.get(`${API_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(
+        `${API_URL}/auth/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      const user = response.data.user;
+      const user =
+        response.data.user;
 
       set({
         user,
@@ -449,17 +651,27 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message || "Failed to get current user";
+        error.response?.data?.message ||
+        "Failed to get current user";
 
-      console.error("Get current user failed:", error);
+      console.error(
+        "Get current user failed:",
+        error
+      );
 
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        localStorage.removeItem("token");
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+        localStorage.removeItem(
+          "token"
+        );
 
         set({
           user: null,
           token: null,
           uploadedFile: null,
+          recentFiles: [],
           authReady: true,
           isLoading: false,
           error: message,
@@ -489,7 +701,8 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
       if (!token) {
         set({
@@ -503,13 +716,19 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.get(`${API_URL}/tts/voice`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(
+        `${API_URL}/tts/voice`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      console.log("User voice:", response.data);
+      console.log(
+        "User voice:",
+        response.data
+      );
 
       set({
         isLoading: false,
@@ -522,9 +741,13 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message || "Failed to get user voice";
+        error.response?.data?.message ||
+        "Failed to get user voice";
 
-      console.error("Get user voice failed:", error);
+      console.error(
+        "Get user voice failed:",
+        error
+      );
 
       set({
         isLoading: false,
@@ -549,7 +772,8 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
       if (!token) {
         set({
@@ -579,8 +803,14 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      console.log("Sending text to TTS backend...");
-      console.log("File ID:", fileId);
+      console.log(
+        "Sending text to TTS backend..."
+      );
+
+      console.log(
+        "File ID:",
+        fileId
+      );
 
       // ========================================
       // GENERATE SPEECH
@@ -594,27 +824,45 @@ const useAuthStore = create((set) => ({
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
-        },
+        }
       );
 
-      let speechResponse = response.data;
+      let speechResponse =
+        response.data;
 
-      if (speechResponse.pending && speechResponse.jobId) {
-        for (let attempt = 0; attempt < 180; attempt += 1) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+      // ========================================
+      // CHECK TTS STATUS
+      // ========================================
 
-          const statusResponse = await axios.get(
-            `${API_URL}/tts/speech/status/${speechResponse.jobId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
+      if (
+        speechResponse.pending &&
+        speechResponse.jobId
+      ) {
+        for (
+          let attempt = 0;
+          attempt < 180;
+          attempt += 1
+        ) {
+          await new Promise(
+            (resolve) =>
+              setTimeout(resolve, 2000)
           );
 
-          speechResponse = statusResponse.data;
+          const statusResponse =
+            await axios.get(
+              `${API_URL}/tts/speech/status/${speechResponse.jobId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+          speechResponse =
+            statusResponse.data;
 
           if (!speechResponse.pending) {
             break;
@@ -622,15 +870,21 @@ const useAuthStore = create((set) => ({
         }
       }
 
-      console.log("Generated speech:", speechResponse);
+      console.log(
+        "Generated speech:",
+        speechResponse
+      );
 
       if (!speechResponse.success) {
-        throw new Error(speechResponse.message || "Speech generation failed");
+        throw new Error(
+          speechResponse.message ||
+            "Speech generation failed"
+        );
       }
 
       if (speechResponse.pending) {
         throw new Error(
-          "Speech generation is still processing. Please try again shortly.",
+          "Speech generation is still processing. Please try again shortly."
         );
       }
 
@@ -638,14 +892,19 @@ const useAuthStore = create((set) => ({
       // GET AUDIO
       // ========================================
 
-      const generatedAudio = speechResponse.audio;
+      const generatedAudio =
+        speechResponse.audio;
 
       if (!generatedAudio) {
-        throw new Error("Backend did not return audio information");
+        throw new Error(
+          "Backend did not return audio information"
+        );
       }
 
       if (!generatedAudio.audioUrl) {
-        throw new Error("Backend did not return an audio URL");
+        throw new Error(
+          "Backend did not return an audio URL"
+        );
       }
 
       set({
@@ -655,9 +914,12 @@ const useAuthStore = create((set) => ({
 
       return {
         success: true,
-        audioUrl: generatedAudio.audioUrl,
+        audioUrl:
+          generatedAudio.audioUrl,
         audio: generatedAudio,
-        message: speechResponse.message || "Speech generated successfully",
+        message:
+          speechResponse.message ||
+          "Speech generated successfully",
       };
     } catch (error) {
       const message =
@@ -665,7 +927,10 @@ const useAuthStore = create((set) => ({
         error.message ||
         "Failed to generate speech";
 
-      console.error("Generate speech failed:", error);
+      console.error(
+        "Generate speech failed:",
+        error
+      );
 
       set({
         isLoading: false,
