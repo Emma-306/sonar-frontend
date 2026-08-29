@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets.js";
 import useAuthStore from "../stores/authStore.js";
+import AccountSettingsModal from "./AccountSettingsModal.jsx";
 
 const DashboardSidebar = ({ isOpen = false, onClose }) => {
   // ==========================================
@@ -15,7 +16,6 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   // ==========================================
 
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
 
   const getCurrentUser = useAuthStore(
     (state) => state.getCurrentUser
@@ -64,6 +64,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   const [failedProfilePicture, setFailedProfilePicture] =
     useState(null);
 
+  const [isSettingsOpen, setIsSettingsOpen] =
+    useState(false);
+
   // ==========================================
   // GET CURRENT USER
   // ==========================================
@@ -83,7 +86,11 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
       getRecentFiles();
       getPinnedFiles();
     }
-  }, [user, getRecentFiles, getPinnedFiles]);
+  }, [
+    user,
+    getRecentFiles,
+    getPinnedFiles,
+  ]);
 
   // ==========================================
   // USER INFORMATION
@@ -93,16 +100,8 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
   const email = user?.email || "";
 
-  const profilePicture = user?.profilePicture || null;
-
-  // ==========================================
-  // LOGOUT
-  // ==========================================
-
-  const handleLogout = () => {
-    logout();
-    onClose?.();
-  };
+  const profilePicture =
+    user?.profilePicture || null;
 
   // ==========================================
   // NEW FILE
@@ -124,7 +123,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
       return;
     }
 
-    navigate(`/dashboard/reading?fileId=${fileId}`);
+    navigate(
+      `/dashboard/reading?fileId=${fileId}`
+    );
+
     onClose?.();
   };
 
@@ -157,7 +159,10 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   // PIN / UNPIN FILE
   // ==========================================
 
-  const handleTogglePin = async (event, file) => {
+  const handleTogglePin = async (
+    event,
+    file
+  ) => {
     event.stopPropagation();
 
     const fileId = getFileId(file);
@@ -221,7 +226,11 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           dark:border-[#1d1d1d]
           dark:bg-[#080808]
 
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          ${
+            isOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+          }
 
           lg:static
           lg:h-screen
@@ -451,11 +460,8 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               Pinned
             </p>
 
-            {/* ========================================
-                PINNED LOADING
-            ======================================== */}
-
-            {isLoading && pinnedFiles.length === 0 ? (
+            {isLoading &&
+            pinnedFiles.length === 0 ? (
               <div className="space-y-1">
                 {[1, 2].map((item) => (
                   <div
@@ -496,10 +502,6 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 ))}
               </div>
             ) : pinnedFiles.length === 0 ? (
-              /* ========================================
-                  EMPTY PINNED STATE
-              ======================================== */
-
               <div className="px-2 py-5 text-center">
                 <svg
                   className="
@@ -533,10 +535,6 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 </p>
               </div>
             ) : (
-              /* ========================================
-                  PINNED FILE LIST
-              ======================================== */
-
               <div className="space-y-0.5">
                 {pinnedFiles.map((file) => {
                   const fileId = getFileId(file);
@@ -553,12 +551,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                         rounded-lg
                         transition
                         hover:bg-gray-50
-
                         dark:hover:bg-[#111111]
                       "
                     >
-                      {/* FILE BUTTON */}
-
                       <button
                         type="button"
                         onClick={() =>
@@ -583,8 +578,6 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                           dark:active:bg-[#151515]
                         "
                       >
-                        {/* PIN ICON */}
-
                         <svg
                           className="
                             h-3.5
@@ -600,16 +593,12 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                           <path d="M12 14v7" />
                         </svg>
 
-                        {/* FILE NAME */}
-
                         <span className="min-w-0 flex-1 truncate">
                           {file.originalName ||
                             file.name ||
                             "Untitled PDF"}
                         </span>
                       </button>
-
-                      {/* UNPIN BUTTON */}
 
                       <button
                         type="button"
@@ -678,11 +667,8 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               Recents
             </p>
 
-            {/* ========================================
-                LOADING
-            ======================================== */}
-
-            {isLoading && recentFiles.length === 0 ? (
+            {isLoading &&
+            recentFiles.length === 0 ? (
               <div className="space-y-1">
                 {[1, 2, 3].map((item) => (
                   <div
@@ -723,10 +709,6 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 ))}
               </div>
             ) : recentFiles.length === 0 ? (
-              /* ========================================
-                  EMPTY STATE
-              ======================================== */
-
               <div className="px-2 py-5 text-center">
                 <svg
                   className="
@@ -762,14 +744,11 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 </p>
               </div>
             ) : (
-              /* ========================================
-                  RECENT FILE LIST
-              ======================================== */
-
               <div className="space-y-0.5">
                 {recentFiles.map((file) => {
                   const fileId = getFileId(file);
-                  const pinned = isFilePinned(file);
+                  const pinned =
+                    isFilePinned(file);
 
                   return (
                     <div
@@ -783,12 +762,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                         rounded-lg
                         transition
                         hover:bg-gray-50
-
                         dark:hover:bg-[#111111]
                       "
                     >
-                      {/* FILE BUTTON */}
-
                       <button
                         type="button"
                         onClick={() =>
@@ -813,8 +789,6 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                           dark:active:bg-[#151515]
                         "
                       >
-                        {/* PDF ICON */}
-
                         <svg
                           className="
                             h-3.5
@@ -836,18 +810,12 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                           <path d="M10 9H8" />
                         </svg>
 
-                        {/* FILE NAME */}
-
                         <span className="min-w-0 flex-1 truncate">
                           {file.originalName ||
                             file.name ||
                             "Untitled PDF"}
                         </span>
                       </button>
-
-                      {/* ==================================
-                          PIN BUTTON
-                      ================================== */}
 
                       <button
                         type="button"
@@ -993,7 +961,8 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             {/* PROFILE PICTURE */}
 
             {profilePicture &&
-            profilePicture !== failedProfilePicture ? (
+            profilePicture !==
+              failedProfilePicture ? (
               <img
                 src={profilePicture}
                 alt={displayName}
@@ -1029,7 +998,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   dark:text-purple-400
                 "
               >
-                {displayName.charAt(0).toUpperCase()}
+                {displayName
+                  .charAt(0)
+                  .toUpperCase()}
               </div>
             )}
 
@@ -1061,9 +1032,12 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
             {/* SETTINGS */}
 
-            <NavLink
-              to="/dashboard/settings"
-              onClick={onClose}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSettingsOpen(true);
+                onClose?.();
+              }}
               className="
                 flex
                 h-8
@@ -1101,72 +1075,21 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.01 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
-            </NavLink>
+            </button>
           </div>
-
-          {/* ==========================================
-              LOGOUT
-          ========================================== */}
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="
-              mt-3
-              flex
-              h-10
-              w-full
-              cursor-pointer
-              items-center
-              justify-center
-              gap-2
-              rounded-lg
-              border
-              border-gray-200
-              bg-gray-50
-              px-2
-              text-[11px]
-              font-medium
-              text-gray-600
-              transition
-
-              hover:border-red-200
-              hover:bg-red-50
-              hover:text-red-600
-
-              active:scale-[0.98]
-
-              dark:border-[#2a2a2a]
-              dark:bg-[#151515]
-              dark:text-gray-400
-
-              dark:hover:border-red-500/20
-              dark:hover:bg-red-500/10
-              dark:hover:text-red-400
-
-              sm:text-[12px]
-            "
-            aria-label="Log out"
-            title="Log out"
-          >
-            <svg
-              className="h-3.5 w-3.5 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M10 17l5-5-5-5" />
-              <path d="M15 12H3" />
-              <path d="M21 19V5a2 2 0 0 0-2-2h-5" />
-            </svg>
-
-            <span>Logout</span>
-          </button>
         </div>
       </aside>
+
+      {/* ==========================================
+          ACCOUNT SETTINGS MODAL
+      ========================================== */}
+
+      <AccountSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() =>
+          setIsSettingsOpen(false)
+        }
+      />
     </>
   );
 };

@@ -1195,6 +1195,91 @@ const useAuthStore = create((set) => ({
       };
     }
   },
+  // ==========================================
+// UPDATE ACCOUNT SETTINGS
+// ==========================================
+
+updateAccountSettings: async (settings) => {
+  try {
+    set({
+      isLoading: true,
+      error: null,
+    });
+
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+      set({
+        isLoading: false,
+        error: "Authentication required",
+      });
+
+      return {
+        success: false,
+        message:
+          "Authentication required",
+      };
+    }
+
+    // ========================================
+    // UPDATE SETTINGS
+    // ========================================
+
+    const response = await axios.patch(
+      `${API_URL}/auth/settings`,
+      settings,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type":
+            "application/json",
+        },
+      }
+    );
+
+    const updatedUser =
+      response.data.user;
+
+    // ========================================
+    // UPDATE USER IN STORE
+    // ========================================
+
+    set({
+      user: updatedUser,
+      isLoading: false,
+      error: null,
+    });
+
+    return {
+      success: true,
+      user: updatedUser,
+      message:
+        response.data.message ||
+        "Settings updated successfully",
+    };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to update settings";
+
+    console.error(
+      "Update account settings failed:",
+      error
+    );
+
+    set({
+      isLoading: false,
+      error: message,
+    });
+
+    return {
+      success: false,
+      message,
+    };
+  }
+},
 }));
 
 export default useAuthStore;
