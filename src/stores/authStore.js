@@ -6,7 +6,8 @@ import axios from "axios";
 // ==========================================
 
 const configuredApiUrl =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5000/api";
 
 const API_URL = configuredApiUrl.endsWith("/api")
   ? configuredApiUrl
@@ -17,6 +18,10 @@ const API_URL = configuredApiUrl.endsWith("/api")
 // ==========================================
 
 const useAuthStore = create((set) => ({
+  // ==========================================
+  // AUTH STATE
+  // ==========================================
+
   user: null,
   token: null,
   authReady: false,
@@ -36,6 +41,12 @@ const useAuthStore = create((set) => ({
   recentFiles: [],
 
   // ==========================================
+  // PINNED FILES
+  // ==========================================
+
+  pinnedFiles: [],
+
+  // ==========================================
   // LOGOUT
   // ==========================================
 
@@ -47,6 +58,7 @@ const useAuthStore = create((set) => ({
       token: null,
       uploadedFile: null,
       recentFiles: [],
+      pinnedFiles: [],
       error: null,
       authReady: true,
     });
@@ -63,6 +75,7 @@ const useAuthStore = create((set) => ({
       set({
         authReady: true,
         recentFiles: [],
+        pinnedFiles: [],
       });
 
       return false;
@@ -145,8 +158,7 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       if (!token) {
         set({
@@ -217,8 +229,7 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       if (!token) {
         set({
@@ -289,14 +300,9 @@ const useAuthStore = create((set) => ({
 
       const formData = new FormData();
 
-      formData.append(
-        "file",
-        file
-      );
+      formData.append("file", file);
 
-      console.log(
-        "Uploading PDF..."
-      );
+      console.log("Uploading PDF...");
 
       // ========================================
       // UPLOAD
@@ -331,7 +337,7 @@ const useAuthStore = create((set) => ({
       }
 
       // ========================================
-      // SAVE FILE
+      // SAVE UPLOADED FILE
       // ========================================
 
       const uploadedFile = {
@@ -339,6 +345,7 @@ const useAuthStore = create((set) => ({
         originalName: file.name,
         fileSize: file.size,
         mimeType: file.type,
+        isPinned: false,
       };
 
       // ========================================
@@ -350,10 +357,11 @@ const useAuthStore = create((set) => ({
         originalName: file.name,
         createdAt:
           new Date().toISOString(),
+        isPinned: false,
       };
 
       // ========================================
-      // UPDATE UPLOADED FILE AND RECENTS
+      // UPDATE UPLOADED FILE + RECENTS
       // ========================================
 
       set((state) => ({
@@ -361,7 +369,6 @@ const useAuthStore = create((set) => ({
 
         recentFiles: [
           recentFile,
-
           ...state.recentFiles.filter(
             (existingFile) =>
               existingFile.id !== fileId
@@ -595,6 +602,252 @@ const useAuthStore = create((set) => ({
   },
 
   // ==========================================
+  // GET PINNED FILES
+  // ==========================================
+
+  getPinnedFiles: async () => {
+    try {
+      set({
+        isLoading: true,
+        error: null,
+      });
+
+      const token =
+        localStorage.getItem("token");
+
+      if (!token) {
+        set({
+          isLoading: false,
+          pinnedFiles: [],
+          error: "Authentication required",
+        });
+
+        return {
+          success: false,
+          files: [],
+          message: "Authentication required",
+        };
+      }
+
+      // ========================================
+      // GET PINNED FILES
+      // ========================================
+
+      const response = await axios.get(
+        `${API_URL}/files/pinned`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log(
+        "Pinned files response:",
+        response.data
+      );
+
+      const files =
+        response.data.files || [];
+
+      // ========================================
+      // SAVE PINNED FILES
+      // ========================================
+
+      set({
+        pinnedFiles: files,
+        isLoading: false,
+        error: null,
+      });
+
+      return {
+        success: true,
+        files,
+      };
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to get pinned files";
+
+      console.error(
+        "Get pinned files failed:",
+        error
+      );
+
+      set({
+        pinnedFiles: [],
+        isLoading: false,
+        error: message,
+      });
+
+      return {
+        success: false,
+        files: [],
+        message,
+      };
+    }
+  },
+
+  // ==========================================
+  // TOGGLE PIN
+  // ==========================================
+
+  togglePin: async (fileId) => {
+    try {
+      if (!fileId) {
+        return {
+          success: false,
+          message: "File ID is required",
+        };
+      }
+
+      const token =
+        localStorage.getItem("token");
+
+      if (!token) {
+        set({
+          error: "Authentication required",
+        });
+
+        return {
+          success: false,
+          message: "Authentication required",
+        };
+      }
+
+      // ========================================
+      // TOGGLE PIN ON BACKEND
+      // ========================================
+
+      const response = await axios.patch(
+        `${API_URL}/files/${fileId}/pin`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log(
+        "Toggle pin response:",
+        response.data
+      );
+
+      const updatedFile =
+        response.data.file;
+
+      const isPinned =
+        response.data.isPinned ??
+        updatedFile?.isPinned ??
+        false;
+
+      // ========================================
+      // UPDATE STORE
+      // ========================================
+
+      set((state) => {
+        // --------------------------------------
+        // UPDATE RECENT FILE
+        // --------------------------------------
+
+        const updatedRecentFiles =
+          state.recentFiles.map(
+            (file) =>
+              file.id === fileId
+                ? {
+                    ...file,
+                    isPinned,
+                  }
+                : file
+          );
+
+        // --------------------------------------
+        // UPDATE PINNED FILES
+        // --------------------------------------
+
+        let updatedPinnedFiles =
+          state.pinnedFiles;
+
+        if (isPinned) {
+          // Add file if it is now pinned
+          const alreadyPinned =
+            state.pinnedFiles.some(
+              (file) =>
+                file.id === fileId
+            );
+
+          if (!alreadyPinned) {
+            const fileToPin =
+              state.recentFiles.find(
+                (file) =>
+                  file.id === fileId
+              );
+
+            if (fileToPin) {
+              updatedPinnedFiles = [
+                {
+                  ...fileToPin,
+                  isPinned: true,
+                },
+                ...state.pinnedFiles,
+              ];
+            }
+          }
+        } else {
+          // Remove file if it was unpinned
+          updatedPinnedFiles =
+            state.pinnedFiles.filter(
+              (file) =>
+                file.id !== fileId
+            );
+        }
+
+        return {
+          recentFiles:
+            updatedRecentFiles,
+
+          pinnedFiles:
+            updatedPinnedFiles,
+
+          error: null,
+        };
+      });
+
+      return {
+        success: true,
+        isPinned,
+        file: updatedFile,
+        message:
+          response.data.message ||
+          (isPinned
+            ? "File pinned successfully"
+            : "File unpinned successfully"),
+      };
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update pin";
+
+      console.error(
+        "Toggle pin failed:",
+        error
+      );
+
+      set({
+        error: message,
+      });
+
+      return {
+        success: false,
+        message,
+      };
+    }
+  },
+
+  // ==========================================
   // CLEAR UPLOADED FILE
   // ==========================================
 
@@ -663,15 +916,14 @@ const useAuthStore = create((set) => ({
         error.response?.status === 401 ||
         error.response?.status === 403
       ) {
-        localStorage.removeItem(
-          "token"
-        );
+        localStorage.removeItem("token");
 
         set({
           user: null,
           token: null,
           uploadedFile: null,
           recentFiles: [],
+          pinnedFiles: [],
           authReady: true,
           isLoading: false,
           error: message,

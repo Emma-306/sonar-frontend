@@ -1,6 +1,5 @@
 import { useTheme } from "../context/UseTheme";
 
-
 const ThemeToggle = () => {
   const { darkMode, toggleTheme } = useTheme();
 
@@ -15,19 +14,24 @@ const ThemeToggle = () => {
       }
       className="
         flex
-        h-9
-        w-9
+        h-11
+        w-11
         items-center
         justify-center
-        rounded-lg
+        rounded-full
+        border
+        border-gray-300
+        dark:border-gray-600
 
         text-gray-500
         hover:text-gray-900
         hover:bg-gray-100
+        hover:border-gray-400
 
         dark:text-gray-400
         dark:hover:text-white
         dark:hover:bg-[#1a1a1a]
+        dark:hover:border-gray-500
 
         transition-all
         duration-200
@@ -36,30 +40,26 @@ const ThemeToggle = () => {
       {darkMode ? (
         /* SUN */
         <svg
-          className="h-[17px] w-[17px]"
+          className="h-5 w-5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
         >
           <circle cx="12" cy="12" r="4" />
-
           <path d="M12 2v2" />
           <path d="M12 20v2" />
-
           <path d="m4.93 4.93 1.41 1.41" />
           <path d="m17.66 17.66 1.41 1.41" />
-
           <path d="M2 12h2" />
           <path d="M20 12h2" />
-
           <path d="m6.34 17.66-1.41 1.41" />
           <path d="m19.07 4.93-1.41 1.41" />
         </svg>
       ) : (
         /* MOON */
         <svg
-          className="h-[17px] w-[17px]"
+          className="h-5 w-5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

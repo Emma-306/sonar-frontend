@@ -3,18 +3,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets.js";
 import useAuthStore from "../stores/authStore.js";
 
-// ==========================================
-// PINNED FILES
-// HARDCODED FOR NOW
-// ==========================================
-
-const pinnedFiles = [
-  {
-    id: "pinned-meeting-notes",
-    name: "Meeting_Notes.pdf",
-  },
-];
-
 const DashboardSidebar = ({ isOpen = false, onClose }) => {
   // ==========================================
   // NAVIGATION
@@ -28,6 +16,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+
   const getCurrentUser = useAuthStore(
     (state) => state.getCurrentUser
   );
@@ -43,6 +32,26 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   const getRecentFiles = useAuthStore(
     (state) => state.getRecentFiles
   );
+
+  // ==========================================
+  // PINNED FILES
+  // ==========================================
+
+  const pinnedFiles = useAuthStore(
+    (state) => state.pinnedFiles
+  );
+
+  const getPinnedFiles = useAuthStore(
+    (state) => state.getPinnedFiles
+  );
+
+  const togglePin = useAuthStore(
+    (state) => state.togglePin
+  );
+
+  // ==========================================
+  // LOADING
+  // ==========================================
 
   const isLoading = useAuthStore(
     (state) => state.isLoading
@@ -66,14 +75,15 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   }, [user, getCurrentUser]);
 
   // ==========================================
-  // GET RECENT FILES
+  // GET RECENT + PINNED FILES
   // ==========================================
 
   useEffect(() => {
     if (user) {
       getRecentFiles();
+      getPinnedFiles();
     }
-  }, [user, getRecentFiles]);
+  }, [user, getRecentFiles, getPinnedFiles]);
 
   // ==========================================
   // USER INFORMATION
@@ -108,12 +118,55 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   // ==========================================
 
   const handleOpenFile = (file) => {
-    if (!file?.id) {
+    const fileId = getFileId(file);
+
+    if (!fileId) {
       return;
     }
 
-    navigate(`/dashboard/reading?fileId=${file.id}`);
+    navigate(`/dashboard/reading?fileId=${fileId}`);
     onClose?.();
+  };
+
+  // ==========================================
+  // GET FILE ID
+  // ==========================================
+
+  const getFileId = (file) => {
+    return file?.id || file?._id;
+  };
+
+  // ==========================================
+  // CHECK IF FILE IS PINNED
+  // ==========================================
+
+  const isFilePinned = (file) => {
+    const fileId = getFileId(file);
+
+    if (!fileId) {
+      return false;
+    }
+
+    return pinnedFiles.some(
+      (pinnedFile) =>
+        getFileId(pinnedFile) === fileId
+    );
+  };
+
+  // ==========================================
+  // PIN / UNPIN FILE
+  // ==========================================
+
+  const handleTogglePin = async (event, file) => {
+    event.stopPropagation();
+
+    const fileId = getFileId(file);
+
+    if (!fileId) {
+      return;
+    }
+
+    await togglePin(fileId);
   };
 
   return (
@@ -381,86 +434,230 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
         >
           {/* ==========================================
               PINNED
-              HARDCODED FOR NOW
           ========================================== */}
 
-          {pinnedFiles.length > 0 && (
-            <div className="mb-5">
-              <p
-                className="
-                  mb-2
-                  px-2
-                  text-[10px]
-                  font-semibold
-                  uppercase
-                  tracking-wider
-                  text-gray-400
-                "
-              >
-                Pinned
-              </p>
+          <div className="mb-5">
+            <p
+              className="
+                mb-2
+                px-2
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-wider
+                text-gray-400
+              "
+            >
+              Pinned
+            </p>
 
-              <div className="space-y-0.5">
-                {pinnedFiles.map((file) => (
-                  <button
-                    type="button"
-                    key={file.id}
-                    onClick={() => handleOpenFile(file)}
+            {/* ========================================
+                PINNED LOADING
+            ======================================== */}
+
+            {isLoading && pinnedFiles.length === 0 ? (
+              <div className="space-y-1">
+                {[1, 2].map((item) => (
+                  <div
+                    key={item}
                     className="
                       flex
+                      h-8
                       w-full
-                      min-w-0
-                      cursor-pointer
                       items-center
                       gap-2.5
                       rounded-lg
                       px-2
-                      py-2
-                      text-left
-                      text-[12px]
-                      text-gray-700
-                      transition
-                      hover:bg-gray-50
-                      active:bg-gray-100
-
-                      dark:text-gray-300
-                      dark:hover:bg-[#111111]
-                      dark:active:bg-[#151515]
                     "
                   >
-                    {/* PIN ICON */}
-
-                    <svg
+                    <div
                       className="
                         h-3.5
                         w-3.5
                         shrink-0
-                        text-gray-400
+                        animate-pulse
+                        rounded
+                        bg-gray-200
+                        dark:bg-[#1d1d1d]
                       "
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 17v5" />
+                    />
 
-                      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z" />
-                    </svg>
-
-                    {/* FILE NAME */}
-
-                    <span className="min-w-0 truncate">
-                      {file.originalName ||
-                        file.name ||
-                        "Untitled PDF"}
-                    </span>
-                  </button>
+                    <div
+                      className="
+                        h-3
+                        flex-1
+                        animate-pulse
+                        rounded
+                        bg-gray-200
+                        dark:bg-[#1d1d1d]
+                      "
+                    />
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : pinnedFiles.length === 0 ? (
+              /* ========================================
+                  EMPTY PINNED STATE
+              ======================================== */
+
+              <div className="px-2 py-5 text-center">
+                <svg
+                  className="
+                    mx-auto
+                    mb-2
+                    h-6
+                    w-6
+                    text-gray-300
+                    dark:text-gray-600
+                  "
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 3h6" />
+                  <path d="M10 3v5l-4 4v2h12v-2l-4-4V3" />
+                  <path d="M12 14v7" />
+                </svg>
+
+                <p
+                  className="
+                    text-[11px]
+                    text-gray-400
+                    dark:text-gray-500
+                  "
+                >
+                  No pinned files
+                </p>
+              </div>
+            ) : (
+              /* ========================================
+                  PINNED FILE LIST
+              ======================================== */
+
+              <div className="space-y-0.5">
+                {pinnedFiles.map((file) => {
+                  const fileId = getFileId(file);
+
+                  return (
+                    <div
+                      key={fileId}
+                      className="
+                        group
+                        flex
+                        w-full
+                        min-w-0
+                        items-center
+                        rounded-lg
+                        transition
+                        hover:bg-gray-50
+
+                        dark:hover:bg-[#111111]
+                      "
+                    >
+                      {/* FILE BUTTON */}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleOpenFile(file)
+                        }
+                        className="
+                          flex
+                          min-w-0
+                          flex-1
+                          cursor-pointer
+                          items-center
+                          gap-2.5
+                          rounded-lg
+                          px-2
+                          py-2
+                          text-left
+                          text-[12px]
+                          text-gray-700
+                          active:bg-gray-100
+
+                          dark:text-gray-300
+                          dark:active:bg-[#151515]
+                        "
+                      >
+                        {/* PIN ICON */}
+
+                        <svg
+                          className="
+                            h-3.5
+                            w-3.5
+                            shrink-0
+                            text-[#7c3aed]
+                          "
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M9 3h6" />
+                          <path d="M10 3v5l-4 4v2h12v-2l-4-4V3" />
+                          <path d="M12 14v7" />
+                        </svg>
+
+                        {/* FILE NAME */}
+
+                        <span className="min-w-0 flex-1 truncate">
+                          {file.originalName ||
+                            file.name ||
+                            "Untitled PDF"}
+                        </span>
+                      </button>
+
+                      {/* UNPIN BUTTON */}
+
+                      <button
+                        type="button"
+                        onClick={(event) =>
+                          handleTogglePin(
+                            event,
+                            file
+                          )
+                        }
+                        className="
+                          mr-1.5
+                          flex
+                          h-6
+                          w-6
+                          shrink-0
+                          cursor-pointer
+                          items-center
+                          justify-center
+                          rounded-md
+                          text-[#7c3aed]
+                          opacity-0
+                          transition-all
+                          active:scale-90
+                          group-hover:opacity-100
+
+                          hover:bg-gray-200
+
+                          dark:hover:bg-[#222222]
+                        "
+                        aria-label="Unpin file"
+                        title="Unpin file"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M9 3h6" />
+                          <path d="M10 3v5l-4 4v2h12v-2l-4-4V3" />
+                          <path d="M12 14v7" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* ==========================================
               RECENTS
@@ -548,13 +745,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   strokeLinejoin="round"
                 >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-
                   <path d="M14 2v6h6" />
-
                   <path d="M16 13H8" />
-
                   <path d="M16 17H8" />
-
                   <path d="M10 9H8" />
                 </svg>
 
@@ -574,69 +767,153 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               ======================================== */
 
               <div className="space-y-0.5">
-                {recentFiles.map((file) => (
-                  <button
-                    type="button"
-                    key={file.id}
-                    onClick={() => handleOpenFile(file)}
-                    className="
-                      flex
-                      w-full
-                      min-w-0
-                      cursor-pointer
-                      items-center
-                      gap-2.5
-                      rounded-lg
-                      px-2
-                      py-2
-                      text-left
-                      text-[12px]
-                      text-gray-700
-                      transition
-                      hover:bg-gray-50
-                      active:bg-gray-100
+                {recentFiles.map((file) => {
+                  const fileId = getFileId(file);
+                  const pinned = isFilePinned(file);
 
-                      dark:text-gray-300
-                      dark:hover:bg-[#111111]
-                      dark:active:bg-[#151515]
-                    "
-                  >
-                    {/* PDF ICON */}
-
-                    <svg
+                  return (
+                    <div
+                      key={fileId}
                       className="
-                        h-3.5
-                        w-3.5
-                        shrink-0
-                        text-gray-400
+                        group
+                        flex
+                        w-full
+                        min-w-0
+                        items-center
+                        rounded-lg
+                        transition
+                        hover:bg-gray-50
+
+                        dark:hover:bg-[#111111]
                       "
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
                     >
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      {/* FILE BUTTON */}
 
-                      <path d="M14 2v6h6" />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleOpenFile(file)
+                        }
+                        className="
+                          flex
+                          min-w-0
+                          flex-1
+                          cursor-pointer
+                          items-center
+                          gap-2.5
+                          rounded-lg
+                          px-2
+                          py-2
+                          text-left
+                          text-[12px]
+                          text-gray-700
+                          active:bg-gray-100
 
-                      <path d="M16 13H8" />
+                          dark:text-gray-300
+                          dark:active:bg-[#151515]
+                        "
+                      >
+                        {/* PDF ICON */}
 
-                      <path d="M16 17H8" />
+                        <svg
+                          className="
+                            h-3.5
+                            w-3.5
+                            shrink-0
+                            text-gray-400
+                          "
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <path d="M14 2v6h6" />
+                          <path d="M16 13H8" />
+                          <path d="M16 17H8" />
+                          <path d="M10 9H8" />
+                        </svg>
 
-                      <path d="M10 9H8" />
-                    </svg>
+                        {/* FILE NAME */}
 
-                    {/* FILE NAME */}
+                        <span className="min-w-0 flex-1 truncate">
+                          {file.originalName ||
+                            file.name ||
+                            "Untitled PDF"}
+                        </span>
+                      </button>
 
-                    <span className="min-w-0 truncate">
-                      {file.originalName ||
-                        file.name ||
-                        "Untitled PDF"}
-                    </span>
-                  </button>
-                ))}
+                      {/* ==================================
+                          PIN BUTTON
+                      ================================== */}
+
+                      <button
+                        type="button"
+                        onClick={(event) =>
+                          handleTogglePin(
+                            event,
+                            file
+                          )
+                        }
+                        className={`
+                          mr-1.5
+                          flex
+                          h-6
+                          w-6
+                          shrink-0
+                          cursor-pointer
+                          items-center
+                          justify-center
+                          rounded-md
+                          transition-all
+                          active:scale-90
+
+                          ${
+                            pinned
+                              ? "text-[#7c3aed] opacity-100"
+                              : "text-gray-400 opacity-0 group-hover:opacity-100"
+                          }
+
+                          hover:bg-gray-200
+                          hover:text-[#7c3aed]
+
+                          dark:hover:bg-[#222222]
+                          dark:hover:text-[#a78bfa]
+                        `}
+                        aria-label={
+                          pinned
+                            ? "Unpin file"
+                            : "Pin file"
+                        }
+                        title={
+                          pinned
+                            ? "Unpin file"
+                            : "Pin file"
+                        }
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill={
+                            pinned
+                              ? "currentColor"
+                              : "none"
+                          }
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M9 3h6" />
+                          <path d="M10 3v5l-4 4v2h12v-2l-4-4V3" />
+                          <path d="M12 14v7" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -721,7 +998,9 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 src={profilePicture}
                 alt={displayName}
                 onError={() =>
-                  setFailedProfilePicture(profilePicture)
+                  setFailedProfilePicture(
+                    profilePicture
+                  )
                 }
                 className="
                   h-8
@@ -820,7 +1099,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                   r="3"
                 />
 
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.01 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.01 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </NavLink>
           </div>
@@ -880,9 +1159,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               strokeLinejoin="round"
             >
               <path d="M10 17l5-5-5-5" />
-
               <path d="M15 12H3" />
-
               <path d="M21 19V5a2 2 0 0 0-2-2h-5" />
             </svg>
 
