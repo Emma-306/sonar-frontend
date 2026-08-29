@@ -195,7 +195,7 @@ const Reading = () => {
       try {
         console.log("Generating speech for file:", fileId);
 
-        const result = await generateUserSpeech(file.extractedText, fileId);
+        const result = await generateUserSpeech(fileId);
 
         if (!isMounted) {
           return;

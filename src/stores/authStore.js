@@ -537,7 +537,7 @@ const useAuthStore = create((set) => ({
   // GENERATE USER SPEECH
   // ==========================================
 
-  generateUserSpeech: async (text, fileId) => {
+  generateUserSpeech: async (fileId) => {
     try {
       set({
         isLoading: true,
@@ -555,22 +555,6 @@ const useAuthStore = create((set) => ({
         return {
           success: false,
           message: "Authentication required",
-        };
-      }
-
-      // ========================================
-      // CHECK TEXT
-      // ========================================
-
-      if (!text || !text.trim()) {
-        set({
-          isLoading: false,
-          error: "Text is required",
-        });
-
-        return {
-          success: false,
-          message: "Text is required",
         };
       }
 
@@ -600,7 +584,6 @@ const useAuthStore = create((set) => ({
       const response = await axios.post(
         `${API_URL}/tts/speech`,
         {
-          text: text.trim(),
           fileId,
         },
         {
