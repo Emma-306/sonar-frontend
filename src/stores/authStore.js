@@ -597,7 +597,7 @@ const useAuthStore = create((set) => ({
       let speechResponse = response.data;
 
       if (speechResponse.pending && speechResponse.jobId) {
-        for (let attempt = 0; attempt < 90; attempt += 1) {
+        for (let attempt = 0; attempt < 180; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 2000));
 
           const statusResponse = await axios.get(
@@ -621,6 +621,12 @@ const useAuthStore = create((set) => ({
 
       if (!speechResponse.success) {
         throw new Error(speechResponse.message || "Speech generation failed");
+      }
+
+      if (speechResponse.pending) {
+        throw new Error(
+          "Speech generation is still processing. Please try again shortly.",
+        );
       }
 
       // ========================================
