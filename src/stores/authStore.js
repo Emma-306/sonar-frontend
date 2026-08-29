@@ -14,6 +14,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 const useAuthStore = create((set) => ({
   user: null,
   token: null,
+  authReady: false,
   isLoading: false,
   error: null,
 
@@ -22,6 +23,30 @@ const useAuthStore = create((set) => ({
   // ==========================================
 
   uploadedFile: null,
+
+  logout: () => {
+    localStorage.removeItem("token");
+    set({
+      user: null,
+      token: null,
+      uploadedFile: null,
+      error: null,
+      authReady: true,
+    });
+  },
+
+  initializeAuth: async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      set({ authReady: true });
+      return false;
+    }
+
+    const result = await useAuthStore.getState().getCurrentUser();
+    set({ authReady: true });
+    return result.success;
+  },
 
   // ==========================================
   // GOOGLE LOGIN
@@ -45,6 +70,7 @@ const useAuthStore = create((set) => ({
       set({
         user,
         token,
+        authReady: true,
         isLoading: false,
         error: null,
       });
@@ -54,8 +80,7 @@ const useAuthStore = create((set) => ({
         user,
       };
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Google login failed";
+      const message = error.response?.data?.message || "Google login failed";
 
       console.error("Google login request failed:", error);
 
@@ -96,15 +121,11 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.post(
-        `${API_URL}/onboarding`,
-        preferences,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.post(`${API_URL}/onboarding`, preferences, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const updatedUser = response.data.user;
 
@@ -121,8 +142,7 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message ||
-        "Failed to complete onboarding";
+        error.response?.data?.message || "Failed to complete onboarding";
 
       console.error("Onboarding request failed:", error);
 
@@ -227,15 +247,11 @@ const useAuthStore = create((set) => ({
       // UPLOAD
       // ========================================
 
-      const response = await axios.post(
-        `${API_URL}/files/upload`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.post(`${API_URL}/files/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       console.log("Upload response:", response.data);
 
@@ -272,8 +288,7 @@ const useAuthStore = create((set) => ({
         success: true,
         fileId,
         file: uploadedFile,
-        message:
-          response.data.message || "PDF uploaded successfully",
+        message: response.data.message || "PDF uploaded successfully",
       };
     } catch (error) {
       const message =
@@ -332,14 +347,11 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.get(
-        `${API_URL}/files/${fileId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.get(`${API_URL}/files/${fileId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       console.log("Get file response:", response.data);
 
@@ -364,9 +376,7 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to get file";
+        error.response?.data?.message || error.message || "Failed to get file";
 
       console.error("Get file failed:", error);
 
@@ -434,21 +444,18 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message ||
-        "Failed to get current user";
+        error.response?.data?.message || "Failed to get current user";
 
       console.error("Get current user failed:", error);
 
-      if (
-        error.response?.status === 401 ||
-        error.response?.status === 403
-      ) {
+      if (error.response?.status === 401 || error.response?.status === 403) {
         localStorage.removeItem("token");
 
         set({
           user: null,
           token: null,
           uploadedFile: null,
+          authReady: true,
           isLoading: false,
           error: message,
         });
@@ -510,8 +517,7 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message ||
-        "Failed to get user voice";
+        error.response?.data?.message || "Failed to get user voice";
 
       console.error("Get user voice failed:", error);
 
@@ -602,7 +608,7 @@ const useAuthStore = create((set) => ({
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       console.log("Generated speech:", response.data);
@@ -614,15 +620,11 @@ const useAuthStore = create((set) => ({
       const generatedAudio = response.data.audio;
 
       if (!generatedAudio) {
-        throw new Error(
-          "Backend did not return audio information"
-        );
+        throw new Error("Backend did not return audio information");
       }
 
       if (!generatedAudio.audioUrl) {
-        throw new Error(
-          "Backend did not return an audio URL"
-        );
+        throw new Error("Backend did not return an audio URL");
       }
 
       set({
@@ -634,9 +636,7 @@ const useAuthStore = create((set) => ({
         success: true,
         audioUrl: generatedAudio.audioUrl,
         audio: generatedAudio,
-        message:
-          response.data.message ||
-          "Speech generated successfully",
+        message: response.data.message || "Speech generated successfully",
       };
     } catch (error) {
       const message =

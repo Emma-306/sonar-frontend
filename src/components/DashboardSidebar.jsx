@@ -17,6 +17,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   // ==========================================
 
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const [failedProfilePicture, setFailedProfilePicture] = useState(null);
 
@@ -44,6 +45,11 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
   // Google profile picture from MongoDB
   const profilePicture = user?.profilePicture || null;
+
+  const handleLogout = () => {
+    logout();
+    onClose?.();
+  };
 
   return (
     <>
@@ -626,6 +632,44 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.01 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </NavLink>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="
+                flex
+                h-8
+                w-8
+                shrink-0
+                cursor-pointer
+                items-center
+                justify-center
+                rounded-lg
+                text-gray-400
+                transition
+                hover:bg-red-50
+                hover:text-red-600
+                active:scale-95
+                dark:hover:bg-red-500/10
+                dark:hover:text-red-400
+              "
+              aria-label="Log out"
+              title="Log out"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M10 17l5-5-5-5" />
+                <path d="M15 12H3" />
+                <path d="M21 19V5a2 2 0 0 0-2-2h-5" />
+              </svg>
+            </button>
           </div>
         </div>
       </aside>
