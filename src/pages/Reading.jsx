@@ -743,7 +743,7 @@ const Reading = () => {
         <div className="flex min-h-0 w-full max-w-[1250px] flex-1 flex-col gap-4 sm:gap-5 md:gap-6 lg:flex-row lg:gap-7">
           {/* ARTICLE */}
 
-          <article className="min-h-0 min-w-0 flex-1 overflow-y-auto rounded-[16px] bg-[#F7F7F7] px-5 py-6 sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 md:py-8 lg:px-9 lg:py-8 xl:px-10 xl:py-9 dark:bg-[#1C1C1E]">
+          <article className="h-fit max-h-[calc(100dvh-11rem)] min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-[16px] bg-[#F7F7F7] px-5 py-6 sm:max-h-[calc(100dvh-12rem)] sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 md:py-8 lg:h-full lg:max-h-full lg:px-9 lg:py-8 xl:px-10 xl:py-9 dark:bg-[#1C1C1E]">
             <h1 className="mb-5 max-w-[900px] break-words pr-8 text-[21px] font-bold leading-[1.2] tracking-[-0.4px] text-[#111111] sm:text-[23px] md:text-[25px] dark:text-white">
               {file?.originalName || "Untitled Document"}
             </h1>
