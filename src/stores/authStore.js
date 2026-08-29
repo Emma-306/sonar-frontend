@@ -594,13 +594,40 @@ const useAuthStore = create((set) => ({
         },
       );
 
-      console.log("Generated speech:", response.data);
+      let speechResponse = response.data;
+
+      if (speechResponse.pending && speechResponse.jobId) {
+        for (let attempt = 0; attempt < 90; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
+          const statusResponse = await axios.get(
+            `${API_URL}/tts/speech/status/${speechResponse.jobId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          speechResponse = statusResponse.data;
+
+          if (!speechResponse.pending) {
+            break;
+          }
+        }
+      }
+
+      console.log("Generated speech:", speechResponse);
+
+      if (!speechResponse.success) {
+        throw new Error(speechResponse.message || "Speech generation failed");
+      }
 
       // ========================================
       // GET AUDIO
       // ========================================
 
-      const generatedAudio = response.data.audio;
+      const generatedAudio = speechResponse.audio;
 
       if (!generatedAudio) {
         throw new Error("Backend did not return audio information");
@@ -619,7 +646,7 @@ const useAuthStore = create((set) => ({
         success: true,
         audioUrl: generatedAudio.audioUrl,
         audio: generatedAudio,
-        message: response.data.message || "Speech generated successfully",
+        message: speechResponse.message || "Speech generated successfully",
       };
     } catch (error) {
       const message =
