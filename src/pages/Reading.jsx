@@ -79,7 +79,7 @@ const Reading = () => {
     // Fallback for old backend-relative URLs
     const backendUrl = import.meta.env.DEV
       ? "http://localhost:5000"
-      : "https://sonar-backend-s3rs.onrender.com";
+      : "https://sonar-backend-2.onrender.com";
 
     const normalizedPath = cleanUrl.startsWith("/") ? cleanUrl : `/${cleanUrl}`;
 
