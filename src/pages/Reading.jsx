@@ -1,10 +1,4 @@
-import {
-  startTransition,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 
 import { useSearchParams } from "react-router-dom";
 
@@ -18,6 +12,7 @@ const Reading = () => {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
   const activeWordRef = useRef(null);
+  const activeSentenceRef = useRef(null);
   const textContainerRef = useRef(null);
 
   const [searchParams] = useSearchParams();
@@ -29,25 +24,15 @@ const Reading = () => {
 
   const getFile = useAuthStore((state) => state.getFile);
 
-  const getUserVoice = useAuthStore(
-    (state) => state.getUserVoice,
-  );
+  const getUserVoice = useAuthStore((state) => state.getUserVoice);
 
-  const generateUserSpeech = useAuthStore(
-    (state) => state.generateUserSpeech,
-  );
+  const generateUserSpeech = useAuthStore((state) => state.generateUserSpeech);
 
-  const downloadAudio = useAuthStore(
-    (state) => state.downloadAudio,
-  );
+  const downloadAudio = useAuthStore((state) => state.downloadAudio);
 
-  const usage = useAuthStore(
-    (state) => state.usage,
-  );
+  const usage = useAuthStore((state) => state.usage);
 
-  const brandColorHex = useAuthStore(
-    (state) => state.brandColorHex,
-  );
+  const brandColorHex = useAuthStore((state) => state.brandColorHex);
 
   // ============================================================
   // STATE
@@ -57,58 +42,42 @@ const Reading = () => {
 
   const [voice, setVoice] = useState(null);
 
-  const [isLoadingFile, setIsLoadingFile] =
-    useState(true);
+  const [isLoadingFile, setIsLoadingFile] = useState(true);
 
-  const [isLoadingVoice, setIsLoadingVoice] =
-    useState(true);
+  const [isLoadingVoice, setIsLoadingVoice] = useState(true);
 
-  const [fileError, setFileError] =
-    useState(null);
+  const [fileError, setFileError] = useState(null);
 
-  const [voiceError, setVoiceError] =
-    useState(null);
+  const [voiceError, setVoiceError] = useState(null);
 
-  const [audioUrl, setAudioUrl] =
-    useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
 
   // Audio document returned by backend
-  const [audio, setAudio] =
-    useState(null);
+  const [audio, setAudio] = useState(null);
 
-  const [isGeneratingAudio, setIsGeneratingAudio] =
-    useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
 
-  const [isDownloading, setIsDownloading] =
-    useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const [audioError, setAudioError] =
-    useState(null);
+  const [audioError, setAudioError] = useState(null);
 
-  const [isPlaying, setIsPlaying] =
-    useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const [speed, setSpeed] =
-    useState(1);
+  const [speed, setSpeed] = useState(1);
 
-  const [currentTime, setCurrentTime] =
-    useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
 
-  const [duration, setDuration] =
-    useState(0);
+  const [duration, setDuration] = useState(0);
 
-  const [volume, setVolume] =
-    useState(0.74);
+  const [volume, setVolume] = useState(0.74);
 
-  const [isMuted, setIsMuted] =
-    useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   // ============================================================
   // ACTIVE WORD
   // ============================================================
 
-  const [activeWordIndex, setActiveWordIndex] =
-    useState(-1);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
 
   // ============================================================
   // RESOLVE AUDIO URL
@@ -119,8 +88,7 @@ const Reading = () => {
       return null;
     }
 
-    const cleanUrl =
-      String(returnedAudioUrl).trim();
+    const cleanUrl = String(returnedAudioUrl).trim();
 
     // Cloudinary / external URL
     if (
@@ -136,10 +104,7 @@ const Reading = () => {
       ? "http://localhost:5000"
       : "https://sonar-backend-2.onrender.com";
 
-    const normalizedPath =
-      cleanUrl.startsWith("/")
-        ? cleanUrl
-        : `/${cleanUrl}`;
+    const normalizedPath = cleanUrl.startsWith("/") ? cleanUrl : `/${cleanUrl}`;
 
     return `${backendUrl}${normalizedPath}`;
   };
@@ -153,20 +118,16 @@ const Reading = () => {
       return [];
     }
 
-    const paragraphs = file.extractedText
-      .split(/\n\s*\n/)
-      .map((paragraph) => paragraph.trim())
-      .filter(Boolean);
+    const sentenceMatches =
+      file.extractedText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
 
-    return paragraphs.map((paragraph) => {
-      const words =
-        paragraph.match(/\S+/g) || [];
-
-      return {
-        paragraph,
-        words,
-      };
-    });
+    return sentenceMatches
+      .map((sentence) => sentence.trim())
+      .filter(Boolean)
+      .map((sentence) => ({
+        sentence,
+        words: sentence.match(/\S+/g) || [],
+      }));
   }, [file?.extractedText]);
 
   // ============================================================
@@ -175,8 +136,7 @@ const Reading = () => {
 
   const totalWordCount = useMemo(() => {
     return textStructure.reduce(
-      (total, paragraph) =>
-        total + paragraph.words.length,
+      (total, paragraph) => total + paragraph.words.length,
       0,
     );
   }, [textStructure]);
@@ -215,17 +175,11 @@ const Reading = () => {
       return;
     }
 
-    const clampedTime = Math.min(
-      Math.max(time, 0),
-      duration,
-    );
+    const clampedTime = Math.min(Math.max(time, 0), duration);
 
-    const progress =
-      clampedTime / duration;
+    const progress = clampedTime / duration;
 
-    let index = Math.floor(
-      progress * totalWordCount,
-    );
+    let index = Math.floor(progress * totalWordCount);
 
     if (index >= totalWordCount) {
       index = totalWordCount - 1;
@@ -243,7 +197,9 @@ const Reading = () => {
   // ============================================================
 
   useEffect(() => {
-    if (!activeWordRef.current) {
+    const activeElement = activeSentenceRef.current || activeWordRef.current;
+
+    if (!activeElement) {
       return;
     }
 
@@ -251,7 +207,7 @@ const Reading = () => {
       return;
     }
 
-    activeWordRef.current.scrollIntoView({
+    activeElement.scrollIntoView({
       behavior: "smooth",
       block: "center",
       inline: "nearest",
@@ -267,9 +223,7 @@ const Reading = () => {
 
     const fetchReadingData = async () => {
       if (!fileId) {
-        setFileError(
-          "No file ID was provided.",
-        );
+        setFileError("No file ID was provided.");
 
         setIsLoadingFile(false);
         setIsLoadingVoice(false);
@@ -284,10 +238,7 @@ const Reading = () => {
       setVoiceError(null);
 
       try {
-        const [
-          fileResult,
-          voiceResult,
-        ] = await Promise.all([
+        const [fileResult, voiceResult] = await Promise.all([
           getFile(fileId),
           getUserVoice(),
         ]);
@@ -300,45 +251,28 @@ const Reading = () => {
         // FILE
         // ======================================================
 
-        if (
-          fileResult?.success &&
-          fileResult?.file
-        ) {
+        if (fileResult?.success && fileResult?.file) {
           setFile(fileResult.file);
         } else {
-          setFileError(
-            fileResult?.message ||
-              "Failed to load the document.",
-          );
+          setFileError(fileResult?.message || "Failed to load the document.");
         }
 
         // ======================================================
         // VOICE
         // ======================================================
 
-        if (
-          voiceResult?.success &&
-          voiceResult?.voice
-        ) {
-          setVoice(
-            voiceResult.voice,
-          );
+        if (voiceResult?.success && voiceResult?.voice) {
+          setVoice(voiceResult.voice);
         } else {
           setVoiceError(
-            voiceResult?.message ||
-              "Failed to load your selected voice.",
+            voiceResult?.message || "Failed to load your selected voice.",
           );
         }
       } catch (error) {
-        console.error(
-          "Failed to load reading data:",
-          error,
-        );
+        console.error("Failed to load reading data:", error);
 
         if (isMounted) {
-          setFileError(
-            "Failed to load the document.",
-          );
+          setFileError("Failed to load the document.");
         }
       } finally {
         if (isMounted) {
@@ -370,9 +304,7 @@ const Reading = () => {
       }
 
       if (!fileId) {
-        setAudioError(
-          "No file ID is available for speech generation.",
-        );
+        setAudioError("No file ID is available for speech generation.");
 
         return;
       }
@@ -395,34 +327,22 @@ const Reading = () => {
       setIsGeneratingAudio(true);
 
       try {
-        console.log(
-          "Generating speech for file:",
-          fileId,
-        );
+        console.log("Generating speech for file:", fileId);
 
-        const result =
-          await generateUserSpeech(
-            fileId,
-          );
+        const result = await generateUserSpeech(fileId);
 
         if (!isMounted) {
           return;
         }
 
-        console.log(
-          "Speech generation result:",
-          result,
-        );
+        console.log("Speech generation result:", result);
 
         // ======================================================
         // GENERATION FAILED
         // ======================================================
 
         if (!result?.success) {
-          setAudioError(
-            result?.message ||
-              "Failed to generate speech.",
-          );
+          setAudioError(result?.message || "Failed to generate speech.");
 
           return;
         }
@@ -432,9 +352,7 @@ const Reading = () => {
         // ======================================================
 
         if (!result.audioUrl) {
-          setAudioError(
-            "The backend did not return an audio URL.",
-          );
+          setAudioError("The backend did not return an audio URL.");
 
           console.error(
             "Backend speech response did not contain audioUrl:",
@@ -448,19 +366,11 @@ const Reading = () => {
         // RESOLVE AUDIO URL
         // ======================================================
 
-        const fullAudioUrl =
-          resolveAudioUrl(
-            result.audioUrl,
-          );
+        const fullAudioUrl = resolveAudioUrl(result.audioUrl);
 
-        console.log(
-          "Audio URL:",
-          fullAudioUrl,
-        );
+        console.log("Audio URL:", fullAudioUrl);
 
-        setAudioUrl(
-          fullAudioUrl,
-        );
+        setAudioUrl(fullAudioUrl);
 
         // ======================================================
         // STORE AUDIO DOCUMENT
@@ -469,15 +379,10 @@ const Reading = () => {
         if (result.audio) {
           setAudio(result.audio);
         } else {
-          console.warn(
-            "Backend did not return the generated audio document.",
-          );
+          console.warn("Backend did not return the generated audio document.");
         }
       } catch (error) {
-        console.error(
-          "Speech generation failed:",
-          error,
-        );
+        console.error("Speech generation failed:", error);
 
         if (isMounted) {
           setAudioError(
@@ -512,13 +417,11 @@ const Reading = () => {
     }
 
     const accent = voice.accent
-      ? voice.accent.charAt(0).toUpperCase() +
-        voice.accent.slice(1)
+      ? voice.accent.charAt(0).toUpperCase() + voice.accent.slice(1)
       : "";
 
     const gender = voice.gender
-      ? voice.gender.charAt(0).toUpperCase() +
-        voice.gender.slice(1)
+      ? voice.gender.charAt(0).toUpperCase() + voice.gender.slice(1)
       : "";
 
     if (accent && gender) {
@@ -537,8 +440,7 @@ const Reading = () => {
   // ============================================================
 
   useEffect(() => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement) {
       return;
@@ -559,10 +461,7 @@ const Reading = () => {
       return;
     }
 
-    console.log(
-      "Loading audio:",
-      audioUrl,
-    );
+    console.log("Loading audio:", audioUrl);
 
     audioElement.pause();
 
@@ -589,9 +488,7 @@ const Reading = () => {
     setIsPlaying(true);
 
     if (videoRef.current) {
-      videoRef.current
-        .play()
-        .catch(() => {});
+      videoRef.current.play().catch(() => {});
     }
   };
 
@@ -612,15 +509,13 @@ const Reading = () => {
   // ============================================================
 
   const handleAudioTimeUpdate = () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement) {
       return;
     }
 
-    const time =
-      audioElement.currentTime;
+    const time = audioElement.currentTime;
 
     setCurrentTime(time);
 
@@ -632,26 +527,16 @@ const Reading = () => {
   // ============================================================
 
   const handleLoadedMetadata = () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement) {
       return;
     }
 
-    if (
-      Number.isFinite(
-        audioElement.duration,
-      ) &&
-      audioElement.duration > 0
-    ) {
-      setDuration(
-        audioElement.duration,
-      );
+    if (Number.isFinite(audioElement.duration) && audioElement.duration > 0) {
+      setDuration(audioElement.duration);
 
-      updateActiveWord(
-        audioElement.currentTime,
-      );
+      updateActiveWord(audioElement.currentTime);
     }
   };
 
@@ -660,26 +545,16 @@ const Reading = () => {
   // ============================================================
 
   const handleCanPlay = () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement) {
       return;
     }
 
-    if (
-      Number.isFinite(
-        audioElement.duration,
-      ) &&
-      audioElement.duration > 0
-    ) {
-      setDuration(
-        audioElement.duration,
-      );
+    if (Number.isFinite(audioElement.duration) && audioElement.duration > 0) {
+      setDuration(audioElement.duration);
 
-      updateActiveWord(
-        audioElement.currentTime,
-      );
+      updateActiveWord(audioElement.currentTime);
     }
   };
 
@@ -688,26 +563,16 @@ const Reading = () => {
   // ============================================================
 
   const handleDurationChange = () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement) {
       return;
     }
 
-    if (
-      Number.isFinite(
-        audioElement.duration,
-      ) &&
-      audioElement.duration > 0
-    ) {
-      setDuration(
-        audioElement.duration,
-      );
+    if (Number.isFinite(audioElement.duration) && audioElement.duration > 0) {
+      setDuration(audioElement.duration);
 
-      updateActiveWord(
-        audioElement.currentTime,
-      );
+      updateActiveWord(audioElement.currentTime);
     }
   };
 
@@ -725,8 +590,7 @@ const Reading = () => {
       videoRef.current.currentTime = 0;
     }
 
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (audioElement) {
       audioElement.currentTime = 0;
@@ -738,23 +602,14 @@ const Reading = () => {
   // ============================================================
 
   const handleAudioError = () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
-    console.error(
-      "Audio could not be loaded.",
-    );
+    console.error("Audio could not be loaded.");
 
     if (audioElement?.error) {
-      console.error(
-        "Audio error code:",
-        audioElement.error.code,
-      );
+      console.error("Audio error code:", audioElement.error.code);
 
-      console.error(
-        "Audio error message:",
-        audioElement.error.message,
-      );
+      console.error("Audio error message:", audioElement.error.message);
     }
 
     setIsPlaying(false);
@@ -771,12 +626,10 @@ const Reading = () => {
   // ============================================================
 
   useEffect(() => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (audioElement) {
-      audioElement.playbackRate =
-        speed;
+      audioElement.playbackRate = speed;
     }
   }, [speed]);
 
@@ -785,13 +638,10 @@ const Reading = () => {
   // ============================================================
 
   useEffect(() => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (audioElement) {
-      audioElement.volume = isMuted
-        ? 0
-        : volume;
+      audioElement.volume = isMuted ? 0 : volume;
     }
   }, [volume, isMuted]);
 
@@ -800,21 +650,16 @@ const Reading = () => {
   // ============================================================
 
   const togglePlay = async () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement) {
-      console.error(
-        "Audio element does not exist.",
-      );
+      console.error("Audio element does not exist.");
 
       return;
     }
 
     if (!audioUrl) {
-      console.error(
-        "No audio URL available.",
-      );
+      console.error("No audio URL available.");
 
       return;
     }
@@ -830,14 +675,9 @@ const Reading = () => {
         audioElement.pause();
       }
     } catch (error) {
-      console.error(
-        "Audio playback error:",
-        error,
-      );
+      console.error("Audio playback error:", error);
 
-      setAudioError(
-        "Unable to play the generated audio.",
-      );
+      setAudioError("Unable to play the generated audio.");
     }
   };
 
@@ -846,26 +686,14 @@ const Reading = () => {
   // ============================================================
 
   const changeSpeed = () => {
-    const speeds = [
-      0.75,
-      1,
-      1.25,
-      1.5,
-      2,
-    ];
+    const speeds = [0.75, 1, 1.25, 1.5, 2];
 
-    const currentIndex =
-      speeds.indexOf(speed);
+    const currentIndex = speeds.indexOf(speed);
 
     const nextIndex =
-      currentIndex === -1
-        ? 1
-        : (currentIndex + 1) %
-          speeds.length;
+      currentIndex === -1 ? 1 : (currentIndex + 1) % speeds.length;
 
-    setSpeed(
-      speeds[nextIndex],
-    );
+    setSpeed(speeds[nextIndex]);
   };
 
   // ============================================================
@@ -873,24 +701,15 @@ const Reading = () => {
   // ============================================================
 
   const formatTime = (time) => {
-    if (
-      !Number.isFinite(time) ||
-      time < 0
-    ) {
+    if (!Number.isFinite(time) || time < 0) {
       return "0:00";
     }
 
-    const minutes = Math.floor(
-      time / 60,
-    );
+    const minutes = Math.floor(time / 60);
 
-    const seconds = Math.floor(
-      time % 60,
-    );
+    const seconds = Math.floor(time % 60);
 
-    return `${minutes}:${seconds
-      .toString()
-      .padStart(2, "0")}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   // ============================================================
@@ -898,12 +717,9 @@ const Reading = () => {
   // ============================================================
 
   const handleSeek = (e) => {
-    const newTime = Number(
-      e.target.value,
-    );
+    const newTime = Number(e.target.value);
 
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement) {
       return;
@@ -913,14 +729,11 @@ const Reading = () => {
       return;
     }
 
-    audioElement.currentTime =
-      newTime;
+    audioElement.currentTime = newTime;
 
     setCurrentTime(newTime);
 
-    updateActiveWord(
-      newTime,
-    );
+    updateActiveWord(newTime);
   };
 
   // ============================================================
@@ -928,26 +741,19 @@ const Reading = () => {
   // ============================================================
 
   const skipBackward = () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement || !audioUrl) {
       return;
     }
 
-    const newTime = Math.max(
-      0,
-      audioElement.currentTime - 10,
-    );
+    const newTime = Math.max(0, audioElement.currentTime - 10);
 
-    audioElement.currentTime =
-      newTime;
+    audioElement.currentTime = newTime;
 
     setCurrentTime(newTime);
 
-    updateActiveWord(
-      newTime,
-    );
+    updateActiveWord(newTime);
   };
 
   // ============================================================
@@ -955,37 +761,27 @@ const Reading = () => {
   // ============================================================
 
   const skipForward = () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement || !audioUrl) {
       return;
     }
 
-    const audioDuration =
-      Number.isFinite(
-        audioElement.duration,
-      )
-        ? audioElement.duration
-        : duration;
+    const audioDuration = Number.isFinite(audioElement.duration)
+      ? audioElement.duration
+      : duration;
 
     if (!audioDuration) {
       return;
     }
 
-    const newTime = Math.min(
-      audioDuration,
-      audioElement.currentTime + 10,
-    );
+    const newTime = Math.min(audioDuration, audioElement.currentTime + 10);
 
-    audioElement.currentTime =
-      newTime;
+    audioElement.currentTime = newTime;
 
     setCurrentTime(newTime);
 
-    updateActiveWord(
-      newTime,
-    );
+    updateActiveWord(newTime);
   };
 
   // ============================================================
@@ -993,8 +789,7 @@ const Reading = () => {
   // ============================================================
 
   const restartAudio = async () => {
-    const audioElement =
-      audioRef.current;
+    const audioElement = audioRef.current;
 
     if (!audioElement || !audioUrl) {
       return;
@@ -1008,10 +803,7 @@ const Reading = () => {
     try {
       await audioElement.play();
     } catch (error) {
-      console.error(
-        "Restart playback error:",
-        error,
-      );
+      console.error("Restart playback error:", error);
     }
   };
 
@@ -1019,66 +811,41 @@ const Reading = () => {
   // DOWNLOAD AUDIO
   // ============================================================
 
-  const handleDownloadAudio =
-    async () => {
-      if (
-        !audio?.id ||
-        isDownloading
-      ) {
-        return;
+  const handleDownloadAudio = async () => {
+    if (!audio?.id || isDownloading) {
+      return;
+    }
+
+    setIsDownloading(true);
+    setAudioError(null);
+
+    try {
+      const originalName = file?.originalName || "sonar-audio";
+
+      const fileNameWithoutExtension = originalName.replace(/\.[^/.]+$/, "");
+
+      const audioFileName = `${fileNameWithoutExtension}-audio.mp3`;
+
+      const result = await downloadAudio(audio.id, audioFileName);
+
+      if (!result?.success) {
+        setAudioError(result?.message || "Audio download failed.");
       }
+    } catch (error) {
+      console.error("Audio download failed:", error);
 
-      setIsDownloading(true);
-      setAudioError(null);
-
-      try {
-        const originalName =
-          file?.originalName ||
-          "sonar-audio";
-
-        const fileNameWithoutExtension =
-          originalName.replace(
-            /\.[^/.]+$/,
-            "",
-          );
-
-        const audioFileName =
-          `${fileNameWithoutExtension}-audio.mp3`;
-
-        const result =
-          await downloadAudio(
-            audio.id,
-            audioFileName,
-          );
-
-        if (!result?.success) {
-          setAudioError(
-            result?.message ||
-              "Audio download failed.",
-          );
-        }
-      } catch (error) {
-        console.error(
-          "Audio download failed:",
-          error,
-        );
-
-        setAudioError(
-          "Audio download failed.",
-        );
-      } finally {
-        setIsDownloading(false);
-      }
-    };
+      setAudioError("Audio download failed.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // ============================================================
   // VOLUME CHANGE
   // ============================================================
 
   const handleVolumeChange = (e) => {
-    const newVolume = Number(
-      e.target.value,
-    );
+    const newVolume = Number(e.target.value);
 
     setVolume(newVolume);
 
@@ -1092,19 +859,14 @@ const Reading = () => {
   // ============================================================
 
   const toggleMute = () => {
-    setIsMuted(
-      (prev) => !prev,
-    );
+    setIsMuted((prev) => !prev);
   };
 
   // ============================================================
   // VOLUME PERCENTAGE
   // ============================================================
 
-  const volumePercentage =
-    isMuted
-      ? 0
-      : volume * 100;
+  const volumePercentage = isMuted ? 0 : volume * 100;
 
   // ============================================================
   // PROGRESS
@@ -1112,36 +874,21 @@ const Reading = () => {
 
   const progress =
     duration > 0
-      ? Math.min(
-          Math.max(
-            (currentTime / duration) *
-              100,
-            0,
-          ),
-          100,
-        )
+      ? Math.min(Math.max((currentTime / duration) * 100, 0), 100)
       : 0;
 
   // ============================================================
   // SAFE USAGE VALUES
   // ============================================================
 
-  const usagePlan =
-    usage?.plan || "free";
+  const usagePlan = usage?.plan || "free";
 
-  const downloadUsed =
-    usage?.downloads?.used ?? 0;
+  const downloadUsed = usage?.downloads?.used ?? 0;
 
-  const downloadLimit =
-    usage?.downloads?.limit ?? 0;
+  const downloadLimit = usage?.downloads?.limit ?? 0;
 
   const downloadRemaining =
-    usage?.downloads?.remaining ??
-    Math.max(
-      downloadLimit -
-        downloadUsed,
-      0,
-    );
+    usage?.downloads?.remaining ?? Math.max(downloadLimit - downloadUsed, 0);
 
   // ============================================================
   // RENDER DOCUMENT WORDS
@@ -1151,99 +898,67 @@ const Reading = () => {
     if (!file?.extractedText) {
       return (
         <p className="text-[#888]">
-          No extracted text is
-          available for this
-          document.
+          No extracted text is available for this document.
         </p>
       );
     }
 
     let globalWordIndex = 0;
 
-    return textStructure.map(
-      (
-        paragraph,
-        paragraphIndex,
-      ) => {
-        const paragraphWords =
-          paragraph.words;
+    return textStructure.map((sentenceBlock, sentenceIndex) => {
+      const sentenceWords = sentenceBlock.words;
+      const sentenceStartIndex = globalWordIndex;
+      const sentenceEndIndex = sentenceStartIndex + sentenceWords.length - 1;
 
-        return (
-          <p
-            key={paragraphIndex}
-            className="mb-[17px]"
-          >
-            {paragraphWords.map(
-              (
-                word,
-                wordIndex,
-              ) => {
-                const currentIndex =
-                  globalWordIndex;
+      const isActiveSentence =
+        activeWordIndex >= sentenceStartIndex &&
+        activeWordIndex <= sentenceEndIndex;
 
-                globalWordIndex += 1;
+      globalWordIndex += sentenceWords.length;
 
-                const isActive =
-                  currentIndex ===
-                  activeWordIndex;
-
-                return (
-                  <span
-                    key={`${paragraphIndex}-${wordIndex}`}
-                    ref={
-                      isActive
-                        ? activeWordRef
-                        : null
-                    }
-                    className="rounded-[3px] transition-all duration-150"
-                    style={
-                      isActive
-                        ? {
-                            color:
-                              brandColorHex,
-
-                            backgroundColor:
-                              `${brandColorHex}18`,
-
-                            boxShadow:
-                              `0 0 0 2px ${brandColorHex}18`,
-                          }
-                        : undefined
-                    }
-                  >
-                    {word}
-
-                    {wordIndex <
-                    paragraphWords.length -
-                      1
-                      ? " "
-                      : ""}
-                  </span>
-                );
-              },
-            )}
-          </p>
-        );
-      },
-    );
+      return (
+        <p
+          key={`sentence-${sentenceIndex}`}
+          ref={isActiveSentence ? activeSentenceRef : null}
+          className="mb-[6px] transition-all duration-200"
+          style={
+            isActiveSentence
+              ? {
+                  color: brandColorHex,
+                  fontSize: "1.06em",
+                  lineHeight: 1.7,
+                  fontWeight: 500,
+                }
+              : {
+                  color: "inherit",
+                }
+          }
+        >
+          {sentenceWords.map((word, wordIndex) => (
+            <span
+              key={`sentence-${sentenceIndex}-word-${wordIndex}`}
+              className="mr-[0.35em] inline-block"
+            >
+              {word}
+            </span>
+          ))}
+        </p>
+      );
+    });
   };
 
   // ============================================================
   // LOADING
   // ============================================================
 
-  if (
-    isLoadingFile ||
-    isLoadingVoice
-  ) {
+  if (isLoadingFile || isLoadingVoice) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-[#F8F9FB] px-6 dark:bg-[#111113]">
         <div className="text-center">
           <div
             className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#7145FF]/20 border-t-[#7145FF]"
             style={{
-              borderTopColor:
-                brandColorHex,
+              borderTopColor: brandColorHex,
             }}
           />
 
@@ -1271,9 +986,7 @@ const Reading = () => {
             Unable to load document
           </h2>
 
-          <p className="text-sm text-[#777] dark:text-[#AAA]">
-            {fileError}
-          </p>
+          <p className="text-sm text-[#777] dark:text-[#AAA]">{fileError}</p>
         </div>
       </div>
     );
@@ -1302,8 +1015,7 @@ const Reading = () => {
             className="h-fit max-h-[calc(100dvh-11rem)] min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-[16px] bg-[#F7F7F7] px-5 py-6 sm:max-h-[calc(100dvh-12rem)] sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 md:py-8 lg:h-full lg:max-h-full lg:px-9 lg:py-8 xl:px-10 xl:py-9 dark:bg-[#1C1C1E]"
           >
             <h1 className="mb-5 max-w-[900px] break-words pr-8 text-[21px] font-bold leading-[1.2] tracking-[-0.4px] text-[#111111] sm:text-[23px] md:text-[25px] dark:text-white">
-              {file?.originalName ||
-                "Untitled Document"}
+              {file?.originalName || "Untitled Document"}
             </h1>
 
             <div className="max-w-[900px] whitespace-normal break-words text-[14px] leading-[1.7] text-[#5C5C5C] sm:text-[15px] sm:leading-[1.75] dark:text-[#D0D0D0]">
@@ -1332,23 +1044,11 @@ const Reading = () => {
                   fill="currentColor"
                   aria-hidden="true"
                 >
-                  <circle
-                    cx="5"
-                    cy="12"
-                    r="1.5"
-                  />
+                  <circle cx="5" cy="12" r="1.5" />
 
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="1.5"
-                  />
+                  <circle cx="12" cy="12" r="1.5" />
 
-                  <circle
-                    cx="19"
-                    cy="12"
-                    r="1.5"
-                  />
+                  <circle cx="19" cy="12" r="1.5" />
                 </svg>
               </button>
             </div>
@@ -1359,8 +1059,7 @@ const Reading = () => {
               <div
                 className="absolute inset-0 scale-[1.1] rounded-full blur-[28px] sm:blur-[30px]"
                 style={{
-                  backgroundColor:
-                    `${brandColorHex}33`,
+                  backgroundColor: `${brandColorHex}33`,
                 }}
               />
 
@@ -1379,30 +1078,14 @@ const Reading = () => {
               <audio
                 ref={audioRef}
                 preload="metadata"
-                onPlay={
-                  handleAudioPlay
-                }
-                onPause={
-                  handleAudioPause
-                }
-                onTimeUpdate={
-                  handleAudioTimeUpdate
-                }
-                onLoadedMetadata={
-                  handleLoadedMetadata
-                }
-                onDurationChange={
-                  handleDurationChange
-                }
-                onCanPlay={
-                  handleCanPlay
-                }
-                onEnded={
-                  handleAudioEnded
-                }
-                onError={
-                  handleAudioError
-                }
+                onPlay={handleAudioPlay}
+                onPause={handleAudioPause}
+                onTimeUpdate={handleAudioTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onDurationChange={handleDurationChange}
+                onCanPlay={handleCanPlay}
+                onEnded={handleAudioEnded}
+                onError={handleAudioError}
               />
             </div>
 
@@ -1433,8 +1116,7 @@ const Reading = () => {
                 <div
                   className="h-3 w-3 animate-spin rounded-full border-2 border-[#7145FF]/20"
                   style={{
-                    borderTopColor:
-                      brandColorHex,
+                    borderTopColor: brandColorHex,
                   }}
                 />
 
@@ -1475,9 +1157,7 @@ const Reading = () => {
 
                   <button
                     type="button"
-                    onClick={
-                      changeSpeed
-                    }
+                    onClick={changeSpeed}
                     className="flex h-[29px] shrink-0 items-center rounded-[6px] border border-[#D5D5D5] bg-white px-2.5 text-[11px] font-medium text-[#333333] sm:px-3 sm:text-[12px] dark:border-white/10 dark:bg-white/5 dark:text-white"
                   >
                     {speed}x
@@ -1489,19 +1169,12 @@ const Reading = () => {
                 <div className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"
-                    onClick={
-                      toggleMute
-                    }
+                    onClick={toggleMute}
                     disabled={!audioUrl}
-                    aria-label={
-                      isMuted
-                        ? "Unmute"
-                        : "Mute"
-                    }
+                    aria-label={isMuted ? "Unmute" : "Mute"}
                     className="flex h-6 w-6 items-center justify-center text-[#9AA7B8] transition hover:text-[#7145FF] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {isMuted ||
-                    volume === 0 ? (
+                    {isMuted || volume === 0 ? (
                       <svg
                         width="17"
                         height="17"
@@ -1514,19 +1187,9 @@ const Reading = () => {
                       >
                         <path d="M11 5L6 9H3v6h3l5 4V5Z" />
 
-                        <line
-                          x1="22"
-                          y1="9"
-                          x2="16"
-                          y2="15"
-                        />
+                        <line x1="22" y1="9" x2="16" y2="15" />
 
-                        <line
-                          x1="16"
-                          y1="9"
-                          x2="22"
-                          y2="15"
-                        />
+                        <line x1="16" y1="9" x2="22" y2="15" />
                       </svg>
                     ) : (
                       <svg
@@ -1555,8 +1218,7 @@ const Reading = () => {
                       className="pointer-events-none absolute left-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full"
                       style={{
                         width: `${volumePercentage}%`,
-                        backgroundColor:
-                          brandColorHex,
+                        backgroundColor: brandColorHex,
                       }}
                     />
 
@@ -1565,14 +1227,8 @@ const Reading = () => {
                       min="0"
                       max="1"
                       step="0.01"
-                      value={
-                        isMuted
-                          ? 0
-                          : volume
-                      }
-                      onChange={
-                        handleVolumeChange
-                      }
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
                       disabled={!audioUrl}
                       aria-label="Volume"
                       className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent"
@@ -1589,8 +1245,7 @@ const Reading = () => {
                     className="absolute left-0 top-0 h-full rounded-full"
                     style={{
                       width: `${progress}%`,
-                      backgroundColor:
-                        brandColorHex,
+                      backgroundColor: brandColorHex,
                     }}
                   />
 
@@ -1598,34 +1253,18 @@ const Reading = () => {
                     type="range"
                     min="0"
                     max={duration || 0}
-                    value={Math.min(
-                      currentTime,
-                      duration || 0,
-                    )}
-                    onChange={
-                      handleSeek
-                    }
-                    disabled={
-                      !audioUrl ||
-                      duration === 0
-                    }
+                    value={Math.min(currentTime, duration || 0)}
+                    onChange={handleSeek}
+                    disabled={!audioUrl || duration === 0}
                     aria-label="Audio progress"
                     className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
                   />
                 </div>
 
                 <div className="mt-2 flex justify-between text-[9px] text-[#999999] sm:text-[10px]">
-                  <span>
-                    {formatTime(
-                      currentTime,
-                    )}
-                  </span>
+                  <span>{formatTime(currentTime)}</span>
 
-                  <span>
-                    {formatTime(
-                      duration,
-                    )}
-                  </span>
+                  <span>{formatTime(duration)}</span>
                 </div>
               </div>
 
@@ -1633,16 +1272,11 @@ const Reading = () => {
 
               <div className="mb-3 mt-4 text-center">
                 <p className="text-[10px] text-[#888] dark:text-[#AAA]">
-                  {usagePlan ===
-                  "premium"
-                    ? "PREMIUM"
-                    : "FREE"}
+                  {usagePlan === "premium" ? "PREMIUM" : "FREE"}
                 </p>
 
                 <p className="text-[11px] text-[#888] dark:text-[#AAA]">
-                  Downloads today:{" "}
-                  {downloadUsed}/
-                  {downloadLimit}
+                  Downloads today: {downloadUsed}/{downloadLimit}
                 </p>
               </div>
 
@@ -1653,9 +1287,7 @@ const Reading = () => {
 
                 <button
                   type="button"
-                  onClick={
-                    skipBackward
-                  }
+                  onClick={skipBackward}
                   disabled={!audioUrl}
                   aria-label="Skip backward 10 seconds"
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#D5D8DD] text-[#8C9BAE] transition hover:bg-[#F0F1F3] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[40px] sm:w-[40px] dark:border-white/10 dark:hover:bg-white/5"
@@ -1690,9 +1322,7 @@ const Reading = () => {
 
                 <button
                   type="button"
-                  onClick={
-                    skipForward
-                  }
+                  onClick={skipForward}
                   disabled={!audioUrl}
                   aria-label="Skip forward 10 seconds"
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#D5D8DD] text-[#8C9BAE] transition hover:bg-[#F0F1F3] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[40px] sm:w-[40px] dark:border-white/10 dark:hover:bg-white/5"
@@ -1727,22 +1357,12 @@ const Reading = () => {
 
                 <button
                   type="button"
-                  onClick={
-                    togglePlay
-                  }
-                  disabled={
-                    !audioUrl ||
-                    isGeneratingAudio
-                  }
-                  aria-label={
-                    isPlaying
-                      ? "Pause"
-                      : "Play"
-                  }
+                  onClick={togglePlay}
+                  disabled={!audioUrl || isGeneratingAudio}
+                  aria-label={isPlaying ? "Pause" : "Play"}
                   className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full text-white shadow-[0_8px_22px_rgba(105,71,255,0.3)] transition hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[50px] sm:w-[50px]"
                   style={{
-                    backgroundColor:
-                      brandColorHex,
+                    backgroundColor: brandColorHex,
                   }}
                 >
                   {isPlaying ? (
@@ -1752,21 +1372,9 @@ const Reading = () => {
                       viewBox="0 0 24 24"
                       fill="currentColor"
                     >
-                      <rect
-                        x="6"
-                        y="5"
-                        width="4"
-                        height="14"
-                        rx="1"
-                      />
+                      <rect x="6" y="5" width="4" height="14" rx="1" />
 
-                      <rect
-                        x="14"
-                        y="5"
-                        width="4"
-                        height="14"
-                        rx="1"
-                      />
+                      <rect x="14" y="5" width="4" height="14" rx="1" />
                     </svg>
                   ) : (
                     <svg
@@ -1784,9 +1392,7 @@ const Reading = () => {
 
                 <button
                   type="button"
-                  onClick={
-                    restartAudio
-                  }
+                  onClick={restartAudio}
                   disabled={!audioUrl}
                   aria-label="Restart audio"
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#D5D8DD] text-[#8C9BAE] transition hover:bg-[#F0F1F3] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[40px] sm:w-[40px] dark:border-white/10 dark:hover:bg-white/5"
@@ -1811,36 +1417,30 @@ const Reading = () => {
 
                 <button
                   type="button"
-                  onClick={
-                    handleDownloadAudio
-                  }
+                  onClick={handleDownloadAudio}
                   disabled={
                     !audio?.id ||
                     !audioUrl ||
                     isGeneratingAudio ||
                     isDownloading ||
-                    downloadRemaining <=
-                      0
+                    downloadRemaining <= 0
                   }
                   aria-label="Download audio"
                   title={
-                    downloadRemaining <=
-                    0
+                    downloadRemaining <= 0
                       ? "Daily download limit reached"
                       : "Download audio"
                   }
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#D5D8DD] text-[#8C9BAE] transition hover:bg-[#F0F1F3] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[40px] sm:w-[40px] dark:border-white/10 dark:hover:bg-white/5"
                   style={{
-                    "--download-hover-color":
-                      brandColorHex,
+                    "--download-hover-color": brandColorHex,
                   }}
                 >
                   {isDownloading ? (
                     <div
                       className="h-4 w-4 animate-spin rounded-full border-2 border-[#7145FF]/20"
                       style={{
-                        borderTopColor:
-                          brandColorHex,
+                        borderTopColor: brandColorHex,
                       }}
                     />
                   ) : (
@@ -1879,8 +1479,7 @@ const Reading = () => {
           <div
             className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[9px] sm:h-[40px] sm:w-[40px]"
             style={{
-              backgroundColor:
-                brandColorHex,
+              backgroundColor: brandColorHex,
             }}
           >
             <svg
@@ -1903,18 +1502,11 @@ const Reading = () => {
 
           <div className="min-w-0 w-[100px] shrink-0 sm:w-[140px] md:w-[170px]">
             <p className="truncate text-[10px] font-medium sm:text-[11px] md:text-[12px]">
-              {file?.originalName ||
-                "Document.pdf"}
+              {file?.originalName || "Document.pdf"}
             </p>
 
             <p className="mt-1 text-[8px] text-[#99999F] sm:text-[9px]">
-              {formatTime(
-                currentTime,
-              )}{" "}
-              /{" "}
-              {formatTime(
-                duration,
-              )}
+              {formatTime(currentTime)} / {formatTime(duration)}
             </p>
           </div>
 
@@ -1926,8 +1518,7 @@ const Reading = () => {
                 className="absolute left-0 top-0 h-full rounded-full"
                 style={{
                   width: `${progress}%`,
-                  backgroundColor:
-                    brandColorHex,
+                  backgroundColor: brandColorHex,
                 }}
               />
 
@@ -1935,17 +1526,9 @@ const Reading = () => {
                 type="range"
                 min="0"
                 max={duration || 0}
-                value={Math.min(
-                  currentTime,
-                  duration || 0,
-                )}
-                onChange={
-                  handleSeek
-                }
-                disabled={
-                  !audioUrl ||
-                  duration === 0
-                }
+                value={Math.min(currentTime, duration || 0)}
+                onChange={handleSeek}
+                disabled={!audioUrl || duration === 0}
                 aria-label="Bottom audio progress"
                 className="absolute -top-[6px] left-0 h-[15px] w-full cursor-pointer appearance-none bg-transparent opacity-0"
               />
@@ -1967,18 +1550,9 @@ const Reading = () => {
 
             <button
               type="button"
-              onClick={
-                togglePlay
-              }
-              disabled={
-                !audioUrl ||
-                isGeneratingAudio
-              }
-              aria-label={
-                isPlaying
-                  ? "Pause"
-                  : "Play"
-              }
+              onClick={togglePlay}
+              disabled={!audioUrl || isGeneratingAudio}
+              aria-label={isPlaying ? "Pause" : "Play"}
               className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
             >
               {isPlaying ? (
@@ -1988,21 +1562,9 @@ const Reading = () => {
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
-                  <rect
-                    x="6"
-                    y="5"
-                    width="4"
-                    height="14"
-                    rx="1"
-                  />
+                  <rect x="6" y="5" width="4" height="14" rx="1" />
 
-                  <rect
-                    x="14"
-                    y="5"
-                    width="4"
-                    height="14"
-                    rx="1"
-                  />
+                  <rect x="14" y="5" width="4" height="14" rx="1" />
                 </svg>
               ) : (
                 <svg
