@@ -43,45 +43,31 @@ const Dashboard = () => {
 
   const user = useAuthStore((state) => state.user);
 
-  const getCurrentUser = useAuthStore(
-    (state) => state.getCurrentUser
-  );
+  const getCurrentUser = useAuthStore((state) => state.getCurrentUser);
 
-  const uploadFile = useAuthStore(
-    (state) => state.uploadFile
-  );
+  const uploadFile = useAuthStore((state) => state.uploadFile);
 
-  const isLoading = useAuthStore(
-    (state) => state.isLoading
-  );
+  const isLoading = useAuthStore((state) => state.isLoading);
 
   // ========================================
   // USAGE / SUBSCRIPTION
   // ========================================
 
-  const usage = useAuthStore(
-    (state) => state.usage
-  );
+  const usage = useAuthStore((state) => state.usage);
 
   // ========================================
   // BRAND COLOR
   // ========================================
 
-  const brandColorHex = useAuthStore(
-    (state) => state.brandColorHex
-  );
+  const brandColorHex = useAuthStore((state) => state.brandColorHex);
 
   // ========================================
   // USER PLAN
   // ========================================
 
-  const currentPlan =
-    usage?.plan ||
-    user?.plan ||
-    "free";
+  const currentPlan = user?.plan || usage?.plan || "free";
 
-  const isPremium =
-    currentPlan?.toLowerCase() === "premium";
+  const isPremium = currentPlan?.toLowerCase() === "premium";
 
   // ========================================
   // UPLOAD LIMIT
@@ -89,9 +75,7 @@ const Dashboard = () => {
 
   const uploadLimit =
     usage?.uploads?.limit ??
-    (isPremium
-      ? PREMIUM_UPLOAD_LIMIT
-      : FREE_UPLOAD_LIMIT);
+    (isPremium ? PREMIUM_UPLOAD_LIMIT : FREE_UPLOAD_LIMIT);
 
   // ========================================
   // TODAY'S UPLOAD USAGE
@@ -107,13 +91,9 @@ const Dashboard = () => {
   // UPLOADS REMAINING
   // ========================================
 
-  const uploadsRemaining = Math.max(
-    uploadLimit - uploadsToday,
-    0
-  );
+  const uploadsRemaining = Math.max(uploadLimit - uploadsToday, 0);
 
-  const uploadLimitReached =
-    uploadsRemaining <= 0;
+  const uploadLimitReached = uploadsRemaining <= 0;
 
   // ========================================
   // GET CURRENT USER
@@ -135,11 +115,7 @@ const Dashboard = () => {
     if (newFile !== "true") return;
 
     const timer = setTimeout(() => {
-      if (
-        fileInputRef.current &&
-        !isLoading &&
-        !uploadLimitReached
-      ) {
+      if (fileInputRef.current && !isLoading && !uploadLimitReached) {
         fileInputRef.current.click();
       }
 
@@ -147,38 +123,26 @@ const Dashboard = () => {
         {},
         {
           replace: true,
-        }
+        },
       );
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [
-    searchParams,
-    setSearchParams,
-    isLoading,
-    uploadLimitReached,
-  ]);
+  }, [searchParams, setSearchParams, isLoading, uploadLimitReached]);
 
   // ========================================
   // USER INFORMATION
   // ========================================
 
   const displayName =
-    user?.displayName ||
-    user?.onboarding?.displayName ||
-    user?.name ||
-    "User";
+    user?.displayName || user?.onboarding?.displayName || user?.name || "User";
 
   // ========================================
   // BROWSE FILES
   // ========================================
 
   const handleBrowseClick = () => {
-    if (
-      selectedFile ||
-      isLoading ||
-      uploadLimitReached
-    ) {
+    if (selectedFile || isLoading || uploadLimitReached) {
       return;
     }
 
@@ -205,7 +169,7 @@ const Dashboard = () => {
       setError(
         isPremium
           ? "You've reached your Premium PDF upload limit for today."
-          : "You've reached your free PDF upload limit for today. Upgrade to Premium for 10 uploads per day."
+          : "You've reached your free PDF upload limit for today. Upgrade to Premium for 10 uploads per day.",
       );
 
       event.target.value = "";
@@ -230,9 +194,7 @@ const Dashboard = () => {
     // ======================================
 
     if (file.size > MAX_FILE_SIZE) {
-      setError(
-        "File is too large. Please select a PDF smaller than 25MB."
-      );
+      setError("File is too large. Please select a PDF smaller than 25MB.");
 
       event.target.value = "";
 
@@ -267,11 +229,7 @@ const Dashboard = () => {
   // ========================================
 
   const handleUploadFile = async () => {
-    if (
-      !selectedFile ||
-      isLoading ||
-      uploadLimitReached
-    ) {
+    if (!selectedFile || isLoading || uploadLimitReached) {
       return;
     }
 
@@ -288,10 +246,7 @@ const Dashboard = () => {
       // ====================================
 
       if (!result?.success) {
-        setError(
-          result?.message ||
-            "Failed to upload PDF."
-        );
+        setError(result?.message || "Failed to upload PDF.");
 
         return;
       }
@@ -301,18 +256,14 @@ const Dashboard = () => {
       // ====================================
 
       if (!result?.fileId) {
-        setError(
-          "PDF uploaded successfully, but no file ID was returned."
-        );
+        setError("PDF uploaded successfully, but no file ID was returned.");
 
         return;
       }
 
       console.log("File ID:", result.fileId);
 
-      setUploadSuccess(
-        "PDF uploaded successfully!"
-      );
+      setUploadSuccess("PDF uploaded successfully!");
 
       setSelectedFile(null);
 
@@ -325,19 +276,13 @@ const Dashboard = () => {
       // ====================================
 
       navigate(
-        `/dashboard/reading?fileId=${encodeURIComponent(
-          result.fileId
-        )}`
+        `/dashboard/reading?fileId=${encodeURIComponent(result.fileId)}`,
       );
     } catch (uploadError) {
-      console.error(
-        "Upload error:",
-        uploadError
-      );
+      console.error("Upload error:", uploadError);
 
       setError(
-        uploadError?.message ||
-          "Something went wrong while uploading the PDF."
+        uploadError?.message || "Something went wrong while uploading the PDF.",
       );
     }
   };
@@ -440,9 +385,7 @@ const Dashboard = () => {
             dark:text-white
           "
         >
-          {isLoading && !user
-            ? "Welcome..."
-            : `Welcome, ${displayName}`}
+          {isLoading && !user ? "Welcome..." : `Welcome, ${displayName}`}
         </h1>
 
         <p
@@ -676,12 +619,9 @@ const Dashboard = () => {
                 <>
                   Your free upload limit resets tomorrow.
                   <br />
-
                   <button
                     type="button"
-                    onClick={() =>
-                      navigate("/plan-comparison")
-                    }
+                    onClick={() => navigate("/plan-comparison")}
                     className="
                       mt-1
                       cursor-pointer
@@ -731,11 +671,7 @@ const Dashboard = () => {
             accept=".pdf,application/pdf"
             onChange={handleFileChange}
             className="hidden"
-            disabled={
-              !!selectedFile ||
-              isLoading ||
-              uploadLimitReached
-            }
+            disabled={!!selectedFile || isLoading || uploadLimitReached}
           />
 
           {/* FILE SIZE */}
@@ -765,10 +701,7 @@ const Dashboard = () => {
                 sm:text-[11px]
               "
             >
-              {uploadsRemaining}{" "}
-              {uploadsRemaining === 1
-                ? "upload"
-                : "uploads"}{" "}
+              {uploadsRemaining} {uploadsRemaining === 1 ? "upload" : "uploads"}{" "}
               remaining today
             </p>
           )}
@@ -855,11 +788,7 @@ const Dashboard = () => {
                       dark:text-gray-400
                     "
                   >
-                    {(
-                      selectedFile.size /
-                      (1024 * 1024)
-                    ).toFixed(2)}{" "}
-                    MB
+                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
                 </div>
 
@@ -913,10 +842,7 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={handleUploadFile}
-                disabled={
-                  isLoading ||
-                  uploadLimitReached
-                }
+                disabled={isLoading || uploadLimitReached}
                 className="
                   mt-4
                   w-full
@@ -937,9 +863,7 @@ const Dashboard = () => {
                   backgroundColor: brandColorHex,
                 }}
               >
-                {isLoading
-                  ? "Uploading PDF..."
-                  : "Upload PDF"}
+                {isLoading ? "Uploading PDF..." : "Upload PDF"}
               </button>
             </>
           )}

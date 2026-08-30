@@ -74,7 +74,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
   const usage = useAuthStore((state) => state.usage);
 
-  const currentPlan = usage?.plan || "free";
+  const currentPlan = user?.plan || usage?.plan || "free";
 
   // ========================================
   // LOCAL STATE
@@ -1058,7 +1058,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
           )}
 
           {currentPlan === "premium" && (
-            <div className="mb-4 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#10B981] to-[#059669] px-2 text-[11px] font-medium text-white sm:text-[12px]">
+            <div className="mb-4 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#3B82F6] to-[#9333EA] px-2 text-[11px] font-medium text-white shadow-sm sm:text-[12px]">
               <svg
                 className="h-3.5 w-3.5 shrink-0"
                 viewBox="0 0 24 24"

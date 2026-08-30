@@ -911,6 +911,9 @@ const useAuthStore = create((set) => ({
 
       const userBrandColor = user?.brandColor || "purple";
 
+      const nextPlan = user?.plan || "free";
+      const isPremiumPlan = nextPlan === "premium";
+
       set({
         user,
         token,
@@ -918,6 +921,22 @@ const useAuthStore = create((set) => ({
         brandColor: userBrandColor,
 
         brandColorHex: getBrandColor(userBrandColor),
+
+        usage: {
+          ...defaultUsage,
+          plan: nextPlan,
+          subscription: user?.subscription || defaultUsage.subscription,
+          uploads: {
+            ...defaultUsage.uploads,
+            limit: isPremiumPlan ? 10 : 3,
+            remaining: isPremiumPlan ? 10 : 3,
+          },
+          downloads: {
+            ...defaultUsage.downloads,
+            limit: isPremiumPlan ? 10 : 3,
+            remaining: isPremiumPlan ? 10 : 3,
+          },
+        },
 
         isLoading: false,
         error: null,
@@ -1515,11 +1534,29 @@ const useAuthStore = create((set) => ({
 
       const userBrandColor = user?.brandColor || "purple";
 
+      const nextPlan = user?.plan || "free";
+      const isPremiumPlan = nextPlan === "premium";
+
       set({
         user,
         token,
         brandColor: userBrandColor,
         brandColorHex: getBrandColor(userBrandColor),
+        usage: {
+          ...defaultUsage,
+          plan: nextPlan,
+          subscription: user?.subscription || defaultUsage.subscription,
+          uploads: {
+            ...defaultUsage.uploads,
+            limit: isPremiumPlan ? 10 : 3,
+            remaining: isPremiumPlan ? 10 : 3,
+          },
+          downloads: {
+            ...defaultUsage.downloads,
+            limit: isPremiumPlan ? 10 : 3,
+            remaining: isPremiumPlan ? 10 : 3,
+          },
+        },
         error: null,
       });
 
