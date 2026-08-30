@@ -1,30 +1,93 @@
 import { useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
+import useAuthStore from "../stores/authStore.js";
 
 const PlanComparison = () => {
     const navigate = useNavigate();
 
+    // ============================================================
+    // ZUSTAND
+    // ============================================================
+
+    const initializePremiumPayment = useAuthStore(
+        (state) => state.initializePremiumPayment
+    );
+
+    const isPaymentLoading = useAuthStore(
+        (state) => state.isPaymentLoading
+    );
+
+    const usage = useAuthStore(
+        (state) => state.usage
+    );
+
+    // ============================================================
+    // FEATURES
+    // ============================================================
+
     const freeFeatures = [
         "Basic voice options & standard narrators",
         "3 PDF document uploads per day limit",
-        "Standard speeds (0.75x to 1.5x only)",
         "Automatic line-by-line word highlighting",
     ];
 
-    const proFeatures = [
-        "Premium natural human-like voice options",
+    const premiumFeatures = [
         "Up to 10 PDF document uploads per day",
         "Generate and download offline audio MP3s",
-        "Wider playback speeds (0.5x to 2x granular)",
-        "24/7 Priority support and custom voice models",
     ];
+
+    // ============================================================
+    // SAFE USAGE VALUES
+    // ============================================================
+
+    const currentPlan = usage?.plan || "free";
+
+    // ============================================================
+    // HANDLE UPGRADE
+    // ============================================================
+
+    const handleUpgrade = async () => {
+        if (isPaymentLoading || currentPlan === "premium") {
+            return;
+        }
+
+        const result = await initializePremiumPayment();
+
+        if (!result.success) {
+            console.error("Premium payment initialization failed:", result.message);
+            return;
+        }
+
+        // Paystack checkout URL returned by backend
+        const authorizationUrl =
+            result.authorization_url ||
+            result.authorizationUrl ||
+            result.data?.authorization_url;
+
+        if (!authorizationUrl) {
+            console.error(
+                "Paystack authorization URL was not returned by the backend."
+            );
+            return;
+        }
+
+        // Redirect user to Paystack checkout
+        window.location.href = authorizationUrl;
+    };
+
+    // ============================================================
+    // RENDER
+    // ============================================================
 
     return (
         <div className="min-h-screen w-full overflow-x-hidden bg-[#000000] text-white">
-            
-            {/* NAVBAR */}
+
+            {/* ====================================================
+                NAVBAR
+            ==================================================== */}
+
             <nav className="flex w-full items-center justify-between px-5 pt-6 sm:px-8 lg:px-16">
-                
+
                 {/* Logo */}
                 <div className="shrink-0">
                     <img
@@ -44,9 +107,12 @@ const PlanComparison = () => {
                 </button>
             </nav>
 
-            {/* HEADER */}
+            {/* ====================================================
+                HEADER
+            ==================================================== */}
+
             <section className="mx-auto flex w-full max-w-[700px] flex-col items-center px-5 pt-12 text-center sm:px-8 sm:pt-16 lg:pt-20">
-                
+
                 <h1
                     className="
                         w-full
@@ -88,7 +154,10 @@ const PlanComparison = () => {
                 </p>
             </section>
 
-            {/* SUBSCRIPTION CARDS */}
+            {/* ====================================================
+                SUBSCRIPTION CARDS
+            ==================================================== */}
+
             <section
                 className="
                     mx-auto
@@ -109,7 +178,11 @@ const PlanComparison = () => {
                     lg:px-10
                 "
             >
-                {/* FREE PLAN */}
+
+                {/* ==================================================
+                    FREE PLAN
+                ================================================== */}
+
                 <div
                     className="
                         box-border
@@ -124,6 +197,7 @@ const PlanComparison = () => {
                     "
                 >
                     <div className="flex items-center justify-between px-6 pt-7 sm:px-8">
+
                         <h2 className="text-[16px] font-[600] text-[#F8FAFC]">
                             Free
                         </h2>
@@ -143,11 +217,16 @@ const PlanComparison = () => {
                                 text-[#F8FAFC]
                             "
                         >
-                            YOUR PLAN
+                            {currentPlan === "premium"
+                                ? "AVAILABLE"
+                                : "YOUR PLAN"}
                         </span>
                     </div>
 
+                    {/* Price */}
+
                     <div className="flex items-baseline px-6 pt-5 sm:px-8">
+
                         <span className="text-[30px] font-[700] leading-none text-[#F8FAFC]">
                             ₦0.00
                         </span>
@@ -157,13 +236,18 @@ const PlanComparison = () => {
                         </span>
                     </div>
 
+                    {/* Description */}
+
                     <p className="px-6 pt-3 text-[14px] font-[400] leading-6 text-[#94A3B8] sm:px-8">
                         Standard document scanning and basic narration settings.
                     </p>
 
                     <div className="mx-6 mt-6 h-px bg-[#FFFFFF14] sm:mx-8" />
 
+                    {/* Features */}
+
                     <div className="flex flex-col gap-4 px-6 pb-7 pt-6 sm:px-8">
+
                         {freeFeatures.map((feature, index) => (
                             <div
                                 key={index}
@@ -182,8 +266,10 @@ const PlanComparison = () => {
                         ))}
 
                         <div className="pt-2">
+
                             <button
                                 type="button"
+                                disabled
                                 className="
                                     h-[42px]
                                     w-full
@@ -193,15 +279,22 @@ const PlanComparison = () => {
                                     text-[14px]
                                     font-[600]
                                     text-[#94A3B8]
+                                    disabled:cursor-default
                                 "
                             >
-                                Current Tier Active
+                                {currentPlan === "premium"
+                                    ? "Free Tier"
+                                    : "Current Tier Active"}
                             </button>
+
                         </div>
                     </div>
                 </div>
 
-                {/* PRO PLAN */}
+                {/* ==================================================
+                    PREMIUM PLAN
+                ================================================== */}
+
                 <div
                     className="
                         box-border
@@ -215,9 +308,13 @@ const PlanComparison = () => {
                         bg-[#11111C]
                     "
                 >
+
+                    {/* Plan Header */}
+
                     <div className="flex items-center justify-between px-6 pt-7 sm:px-8">
+
                         <h2 className="text-[20px] font-[600] text-[#F8FAFC]">
-                            Pro
+                            Premium
                         </h2>
 
                         <span
@@ -237,9 +334,13 @@ const PlanComparison = () => {
                         >
                             RECOMMENDED
                         </span>
+
                     </div>
 
+                    {/* Price */}
+
                     <div className="flex items-baseline px-6 pt-5 sm:px-8">
+
                         <span className="text-[30px] font-[700] leading-none text-[#F8FAFC]">
                             ₦4,500
                         </span>
@@ -247,7 +348,10 @@ const PlanComparison = () => {
                         <span className="ml-1 text-[12px] font-[400] text-[#94A3B8]">
                             / month
                         </span>
+
                     </div>
+
+                    {/* Description */}
 
                     <p className="px-6 pt-3 text-[14px] font-[400] leading-6 text-[#94A3B8] sm:px-8">
                         Unlock high fidelity voices with ultra-customizable controls.
@@ -255,12 +359,16 @@ const PlanComparison = () => {
 
                     <div className="mx-6 mt-6 h-px bg-[#9333EA33] sm:mx-8" />
 
+                    {/* Features */}
+
                     <div className="flex flex-col gap-4 px-6 pb-7 pt-6 sm:px-8">
-                        {proFeatures.map((feature, index) => (
+
+                        {premiumFeatures.map((feature, index) => (
                             <div
                                 key={index}
                                 className="flex min-w-0 items-start gap-4"
                             >
+
                                 <img
                                     src={assets.sparkle}
                                     alt=""
@@ -270,12 +378,23 @@ const PlanComparison = () => {
                                 <p className="min-w-0 text-[14px] font-[400] leading-5 text-[#F8FAFC]">
                                     {feature}
                                 </p>
+
                             </div>
                         ))}
 
+                        {/* ==================================================
+                            UPGRADE BUTTON
+                        ================================================== */}
+
                         <div className="pt-2">
+
                             <button
                                 type="button"
+                                onClick={handleUpgrade}
+                                disabled={
+                                    isPaymentLoading ||
+                                    currentPlan === "premium"
+                                }
                                 className="
                                     h-[42px]
                                     w-full
@@ -288,10 +407,17 @@ const PlanComparison = () => {
                                     text-[#000000]
                                     transition-opacity
                                     hover:opacity-90
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-50
                                 "
                             >
-                                Upgrade to Pro
+                                {isPaymentLoading
+                                    ? "Starting payment..."
+                                    : currentPlan === "premium"
+                                        ? "Premium Active"
+                                        : "Upgrade to Premium"}
                             </button>
+
                         </div>
                     </div>
                 </div>

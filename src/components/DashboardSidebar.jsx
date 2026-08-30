@@ -69,6 +69,14 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   const isLoading = useAuthStore((state) => state.isLoading);
 
   // ========================================
+  // USAGE / PLAN
+  // ========================================
+
+  const usage = useAuthStore((state) => state.usage);
+
+  const currentPlan = usage?.plan || "free";
+
+  // ========================================
   // LOCAL STATE
   // ========================================
 
@@ -1010,42 +1018,58 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
         >
           {/* UPGRADE */}
 
-          <NavLink
-            to="/plan-comparison"
-            onClick={onClose}
-            className="
-              mb-4
-              flex
-              h-10
-              w-full
-              cursor-pointer
-              items-center
-              justify-center
-              gap-2
-              rounded-lg
-              bg-gradient-to-r
-              from-[#3B82F6]
-              to-[#9333EA]
-              px-2
-              text-[11px]
-              font-medium
-              text-white
-              transition
-              hover:opacity-90
-              active:scale-[0.98]
-              sm:text-[12px]
-            "
-          >
-            <svg
-              className="h-3.5 w-3.5 shrink-0"
-              viewBox="0 0 24 24"
-              fill="currentColor"
+          {currentPlan === "free" && (
+            <NavLink
+              to="/plan-comparison"
+              onClick={onClose}
+              className="
+                mb-4
+                flex
+                h-10
+                w-full
+                cursor-pointer
+                items-center
+                justify-center
+                gap-2
+                rounded-lg
+                bg-gradient-to-r
+                from-[#3B82F6]
+                to-[#9333EA]
+                px-2
+                text-[11px]
+                font-medium
+                text-white
+                transition
+                hover:opacity-90
+                active:scale-[0.98]
+                sm:text-[12px]
+              "
             >
-              <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.8 5.6 21.2 8 14 2 9.2h7.6z" />
-            </svg>
+              <svg
+                className="h-3.5 w-3.5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.8 5.6 21.2 8 14 2 9.2h7.6z" />
+              </svg>
 
-            <span>Upgrade to Pro</span>
-          </NavLink>
+              <span>Upgrade to Pro</span>
+            </NavLink>
+          )}
+
+          {currentPlan === "premium" && (
+            <div className="mb-4 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#10B981] to-[#059669] px-2 text-[11px] font-medium text-white sm:text-[12px]">
+              <svg
+                className="h-3.5 w-3.5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.8 5.6 21.2 8 14 2 9.2h7.6z" />
+              </svg>
+
+              <span>Premium Member</span>
+            </div>
+          )}
 
           {/* USER */}
 

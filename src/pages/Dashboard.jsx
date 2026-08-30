@@ -11,6 +11,9 @@ import useAuthStore from "../stores/authStore.js";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
+const FREE_UPLOAD_LIMIT = 3;
+const PREMIUM_UPLOAD_LIMIT = 10;
+
 // ==========================================
 // DASHBOARD
 // ==========================================
@@ -53,12 +56,64 @@ const Dashboard = () => {
   );
 
   // ========================================
+  // USAGE / SUBSCRIPTION
+  // ========================================
+
+  const usage = useAuthStore(
+    (state) => state.usage
+  );
+
+  // ========================================
   // BRAND COLOR
   // ========================================
 
   const brandColorHex = useAuthStore(
     (state) => state.brandColorHex
   );
+
+  // ========================================
+  // USER PLAN
+  // ========================================
+
+  const currentPlan =
+    usage?.plan ||
+    user?.plan ||
+    "free";
+
+  const isPremium =
+    currentPlan?.toLowerCase() === "premium";
+
+  // ========================================
+  // UPLOAD LIMIT
+  // ========================================
+
+  const uploadLimit =
+    usage?.uploads?.limit ??
+    (isPremium
+      ? PREMIUM_UPLOAD_LIMIT
+      : FREE_UPLOAD_LIMIT);
+
+  // ========================================
+  // TODAY'S UPLOAD USAGE
+  // ========================================
+
+  const uploadsToday =
+    usage?.uploads?.used ??
+    user?.usage?.uploadsToday ??
+    user?.uploadsToday ??
+    0;
+
+  // ========================================
+  // UPLOADS REMAINING
+  // ========================================
+
+  const uploadsRemaining = Math.max(
+    uploadLimit - uploadsToday,
+    0
+  );
+
+  const uploadLimitReached =
+    uploadsRemaining <= 0;
 
   // ========================================
   // GET CURRENT USER
@@ -82,7 +137,8 @@ const Dashboard = () => {
     const timer = setTimeout(() => {
       if (
         fileInputRef.current &&
-        !isLoading
+        !isLoading &&
+        !uploadLimitReached
       ) {
         fileInputRef.current.click();
       }
@@ -100,6 +156,7 @@ const Dashboard = () => {
     searchParams,
     setSearchParams,
     isLoading,
+    uploadLimitReached,
   ]);
 
   // ========================================
@@ -117,7 +174,13 @@ const Dashboard = () => {
   // ========================================
 
   const handleBrowseClick = () => {
-    if (selectedFile || isLoading) return;
+    if (
+      selectedFile ||
+      isLoading ||
+      uploadLimitReached
+    ) {
+      return;
+    }
 
     fileInputRef.current?.click();
   };
@@ -133,6 +196,22 @@ const Dashboard = () => {
 
     setError("");
     setUploadSuccess("");
+
+    // ======================================
+    // CHECK DAILY LIMIT
+    // ======================================
+
+    if (uploadLimitReached) {
+      setError(
+        isPremium
+          ? "You've reached your Premium PDF upload limit for today."
+          : "You've reached your free PDF upload limit for today. Upgrade to Premium for 10 uploads per day."
+      );
+
+      event.target.value = "";
+
+      return;
+    }
 
     // ======================================
     // CHECK PDF
@@ -188,7 +267,11 @@ const Dashboard = () => {
   // ========================================
 
   const handleUploadFile = async () => {
-    if (!selectedFile || isLoading) {
+    if (
+      !selectedFile ||
+      isLoading ||
+      uploadLimitReached
+    ) {
       return;
     }
 
@@ -310,9 +393,9 @@ const Dashboard = () => {
           justify-center
         "
       >
-        {/* ======================================
+        {/* ====================================
             SONAR ORB
-        ====================================== */}
+        ==================================== */}
 
         <div
           className="
@@ -341,9 +424,9 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* ======================================
+        {/* ====================================
             WELCOME TEXT
-        ====================================== */}
+        ==================================== */}
 
         <h1
           className="
@@ -364,12 +447,11 @@ const Dashboard = () => {
 
         <p
           className="
-            mb-7
+            mb-4
             px-2
             text-center
             text-[13px]
             text-gray-500
-            sm:mb-8
             sm:text-[14px]
             dark:text-gray-400
           "
@@ -377,9 +459,126 @@ const Dashboard = () => {
           What PDF would you like to listen to today?
         </p>
 
-        {/* ======================================
+        {/* ====================================
+            PLAN / USAGE
+        ==================================== */}
+
+        <div
+          className="
+            mb-7
+            flex
+            w-full
+            max-w-[420px]
+            items-center
+            justify-between
+            rounded-xl
+            border
+            border-gray-200
+            bg-white
+            px-4
+            py-3
+            dark:border-[#292929]
+            dark:bg-[#0c0c0c]
+          "
+        >
+          <div className="flex items-center gap-3">
+            {/* PLAN ICON */}
+
+            <div
+              className="
+                flex
+                h-8
+                w-8
+                items-center
+                justify-center
+                rounded-full
+              "
+              style={{
+                backgroundColor: `${brandColorHex}15`,
+              }}
+            >
+              {isPremium ? (
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={brandColorHex}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3l2.7 5.47L21 9.38l-4.5 4.38 1.06 6.18L12 17.03l-5.56 2.91L7.5 13.76 3 9.38l6.3-.91L12 3z" />
+                </svg>
+              ) : (
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={brandColorHex}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3v18" />
+                  <path d="M3 12h18" />
+                </svg>
+              )}
+            </div>
+
+            <div>
+              <p
+                className="
+                  text-[11px]
+                  font-medium
+                  uppercase
+                  tracking-wide
+                  text-gray-400
+                "
+              >
+                Current plan
+              </p>
+
+              <p
+                className="
+                  text-[13px]
+                  font-semibold
+                  text-gray-800
+                  dark:text-gray-100
+                "
+              >
+                {isPremium ? "Premium" : "Free"}
+              </p>
+            </div>
+          </div>
+
+          {/* UPLOAD USAGE */}
+
+          <div className="text-right">
+            <p
+              className="
+                text-[11px]
+                text-gray-400
+              "
+            >
+              PDF uploads today
+            </p>
+
+            <p
+              className="
+                text-[13px]
+                font-semibold
+                text-gray-800
+                dark:text-gray-100
+              "
+            >
+              {uploadsToday} / {uploadLimit}
+            </p>
+          </div>
+        </div>
+
+        {/* ====================================
             UPLOAD AREA
-        ====================================== */}
+        ==================================== */}
 
         <div
           className="
@@ -407,9 +606,7 @@ const Dashboard = () => {
             dark:hover:border-[#444]
           "
         >
-          {/* ====================================
-              UPLOAD ICON
-          ==================================== */}
+          {/* UPLOAD ICON */}
 
           <div
             className="
@@ -442,9 +639,7 @@ const Dashboard = () => {
             </svg>
           </div>
 
-          {/* ====================================
-              HEADING
-          ==================================== */}
+          {/* HEADING */}
 
           <p
             className="
@@ -457,12 +652,12 @@ const Dashboard = () => {
               dark:text-gray-100
             "
           >
-            Upload a PDF to get started
+            {uploadLimitReached
+              ? "Daily upload limit reached"
+              : "Upload a PDF to get started"}
           </p>
 
-          {/* ====================================
-              BROWSE FILES
-          ==================================== */}
+          {/* BROWSE FILES */}
 
           <p
             className="
@@ -474,7 +669,34 @@ const Dashboard = () => {
               dark:text-gray-400
             "
           >
-            {selectedFile ? (
+            {uploadLimitReached ? (
+              isPremium ? (
+                "Your Premium upload limit resets tomorrow."
+              ) : (
+                <>
+                  Your free upload limit resets tomorrow.
+                  <br />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate("/plan-comparison")
+                    }
+                    className="
+                      mt-1
+                      cursor-pointer
+                      font-medium
+                      hover:underline
+                    "
+                    style={{
+                      color: brandColorHex,
+                    }}
+                  >
+                    Upgrade to Premium
+                  </button>
+                </>
+              )
+            ) : selectedFile ? (
               "PDF selected"
             ) : (
               <>
@@ -501,9 +723,7 @@ const Dashboard = () => {
             )}
           </p>
 
-          {/* ====================================
-              FILE INPUT
-          ==================================== */}
+          {/* FILE INPUT */}
 
           <input
             ref={fileInputRef}
@@ -512,28 +732,48 @@ const Dashboard = () => {
             onChange={handleFileChange}
             className="hidden"
             disabled={
-              !!selectedFile || isLoading
+              !!selectedFile ||
+              isLoading ||
+              uploadLimitReached
             }
           />
 
-          {/* ====================================
-              FILE SIZE
-          ==================================== */}
+          {/* FILE SIZE */}
 
-          <p
-            className="
-              text-center
-              text-[10px]
-              text-gray-400
-              sm:text-[11px]
-            "
-          >
-            Supports .pdf files up to 25MB.
-          </p>
+          {!uploadLimitReached && (
+            <p
+              className="
+                text-center
+                text-[10px]
+                text-gray-400
+                sm:text-[11px]
+              "
+            >
+              Supports .pdf files up to 25MB.
+            </p>
+          )}
 
-          {/* ====================================
-              ERROR
-          ==================================== */}
+          {/* USAGE REMAINING */}
+
+          {!uploadLimitReached && !selectedFile && (
+            <p
+              className="
+                mt-2
+                text-center
+                text-[10px]
+                text-gray-400
+                sm:text-[11px]
+              "
+            >
+              {uploadsRemaining}{" "}
+              {uploadsRemaining === 1
+                ? "upload"
+                : "uploads"}{" "}
+              remaining today
+            </p>
+          )}
+
+          {/* ERROR */}
 
           {error && (
             <p
@@ -551,9 +791,7 @@ const Dashboard = () => {
             </p>
           )}
 
-          {/* ====================================
-              SUCCESS
-          ==================================== */}
+          {/* SUCCESS */}
 
           {uploadSuccess && (
             <p
@@ -572,9 +810,7 @@ const Dashboard = () => {
             </p>
           )}
 
-          {/* ====================================
-              SELECTED FILE
-          ==================================== */}
+          {/* SELECTED FILE */}
 
           {selectedFile && !error && (
             <>
@@ -672,14 +908,15 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {/* ====================================
-                  UPLOAD BUTTON
-              ==================================== */}
+              {/* UPLOAD BUTTON */}
 
               <button
                 type="button"
                 onClick={handleUploadFile}
-                disabled={isLoading}
+                disabled={
+                  isLoading ||
+                  uploadLimitReached
+                }
                 className="
                   mt-4
                   w-full

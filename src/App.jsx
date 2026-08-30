@@ -7,6 +7,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import PlanComparison from "./pages/PlanComparison";
 import Reading from "./pages/Reading";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import PaymentSuccess from "./pages/PaymentSuccess.jsx";
 
 const App = () => {
   return (
@@ -24,6 +25,7 @@ const App = () => {
             <Route path="reading" element={<Reading />} />
           </Route>
         </Route>
+        <Route path="/payment-success" element={<PaymentSuccess />} />
       </Routes>
     </HashRouter>
   );

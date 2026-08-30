@@ -49,11 +49,35 @@ export const brandColors = [
 // ==========================================
 
 const getBrandColor = (brandColor) => {
-  const foundColor = brandColors.find(
-    (color) => color.id === brandColor,
-  );
+  const foundColor = brandColors.find((color) => color.id === brandColor);
 
   return foundColor?.color || "#A855F7";
+};
+
+// ==========================================
+// DEFAULT USAGE
+// ==========================================
+
+const defaultUsage = {
+  plan: "free",
+
+  uploads: {
+    used: 0,
+    limit: 3,
+    remaining: 3,
+  },
+
+  downloads: {
+    used: 0,
+    limit: 3,
+    remaining: 3,
+  },
+
+  subscription: {
+    status: "inactive",
+    startDate: null,
+    endDate: null,
+  },
 };
 
 // ==========================================
@@ -70,6 +94,13 @@ const useAuthStore = create((set) => ({
   authReady: false,
   isLoading: false,
   error: null,
+
+  // ==========================================
+  // PAYMENT / SUBSCRIPTION STATE
+  // ==========================================
+
+  usage: defaultUsage,
+  isPaymentLoading: false,
 
   // ==========================================
   // BRAND COLOR
@@ -105,7 +136,7 @@ const useAuthStore = create((set) => ({
   isSearching: false,
 
   // ==========================================
-  // SET BRAND COLOR LOCALLY
+  // SET BRAND COLOR
   // ==========================================
 
   setBrandColor: (brandColor) => {
@@ -128,13 +159,40 @@ const useAuthStore = create((set) => ({
       user: null,
       token: null,
       uploadedFile: null,
+
       recentFiles: [],
       pinnedFiles: [],
+
       searchResults: [],
       searchQuery: "",
       isSearching: false,
+
       brandColor: "purple",
       brandColorHex: "#A855F7",
+
+      usage: {
+        plan: "free",
+
+        uploads: {
+          used: 0,
+          limit: 3,
+          remaining: 3,
+        },
+
+        downloads: {
+          used: 0,
+          limit: 3,
+          remaining: 3,
+        },
+
+        subscription: {
+          status: "inactive",
+          startDate: null,
+          endDate: null,
+        },
+      },
+
+      isPaymentLoading: false,
       error: null,
       isLoading: false,
       authReady: true,
@@ -153,8 +211,11 @@ const useAuthStore = create((set) => ({
         user: null,
         token: null,
         authReady: true,
+
         recentFiles: [],
         pinnedFiles: [],
+
+        usage: defaultUsage,
       });
 
       return false;
@@ -165,7 +226,10 @@ const useAuthStore = create((set) => ({
     if (result.success) {
       await Promise.all([
         useAuthStore.getState().getRecentFiles(),
+
         useAuthStore.getState().getPinnedFiles(),
+
+        useAuthStore.getState().getUsage(),
       ]);
     }
 
@@ -200,20 +264,25 @@ const useAuthStore = create((set) => ({
       set({
         user,
         token,
+
         brandColor: userBrandColor,
+
         brandColorHex: getBrandColor(userBrandColor),
+
         authReady: true,
         isLoading: false,
         error: null,
       });
+
+      // Get authoritative usage
+      await useAuthStore.getState().getUsage();
 
       return {
         success: true,
         user,
       };
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Google login failed";
+      const message = error.response?.data?.message || "Google login failed";
 
       console.error("Google login request failed:", error);
 
@@ -254,26 +323,24 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.post(
-        `${API_URL}/onboarding`,
-        preferences,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await axios.post(`${API_URL}/onboarding`, preferences, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       const updatedUser = response.data.user;
 
-      const userBrandColor =
-        updatedUser?.brandColor || "purple";
+      const userBrandColor = updatedUser?.brandColor || "purple";
 
       set({
         user: updatedUser,
         token,
+
         brandColor: userBrandColor,
+
         brandColorHex: getBrandColor(userBrandColor),
+
         isLoading: false,
         error: null,
       });
@@ -284,8 +351,7 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message ||
-        "Failed to complete onboarding";
+        error.response?.data?.message || "Failed to complete onboarding";
 
       console.error("Onboarding request failed:", error);
 
@@ -364,25 +430,33 @@ const useAuthStore = create((set) => ({
         };
       }
 
+      // ======================================
+      // FORM DATA
+      // ======================================
+
       const formData = new FormData();
 
       formData.append("file", file);
 
-      const response = await axios.post(
-        `${API_URL}/files/upload`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      // ======================================
+      // UPLOAD REQUEST
+      // ======================================
+
+      const response = await axios.post(`${API_URL}/files/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       const fileId = response.data.fileId;
 
       if (!fileId) {
         throw new Error("Backend did not return a file ID");
       }
+
+      // ======================================
+      // CREATE LOCAL FILE OBJECT
+      // ======================================
 
       const uploadedFile = {
         id: fileId,
@@ -404,6 +478,7 @@ const useAuthStore = create((set) => ({
 
         recentFiles: [
           recentFile,
+
           ...state.recentFiles.filter(
             (existingFile) => existingFile.id !== fileId,
           ),
@@ -413,12 +488,18 @@ const useAuthStore = create((set) => ({
         error: null,
       }));
 
+      // ======================================
+      // REFRESH USAGE
+      // ======================================
+
+      await useAuthStore.getState().getUsage();
+
       return {
         success: true,
         fileId,
         file: uploadedFile,
-        message:
-          response.data.message || "PDF uploaded successfully",
+
+        message: response.data.message || "PDF uploaded successfully",
       };
     } catch (error) {
       const message =
@@ -428,10 +509,38 @@ const useAuthStore = create((set) => ({
 
       console.error("PDF upload failed:", error);
 
-      set({
-        isLoading: false,
-        error: message,
-      });
+      // ======================================
+      // UPDATE USAGE IF BACKEND RETURNS IT
+      // ======================================
+
+      const backendUsage = error.response?.data?.usage;
+
+      if (backendUsage) {
+        set((state) => ({
+          usage: {
+            ...state.usage,
+
+            uploads: {
+              ...state.usage.uploads,
+              ...(backendUsage.uploads || backendUsage),
+            },
+
+            ...(backendUsage.plan
+              ? {
+                  plan: backendUsage.plan,
+                }
+              : {}),
+          },
+
+          isLoading: false,
+          error: message,
+        }));
+      } else {
+        set({
+          isLoading: false,
+          error: message,
+        });
+      }
 
       return {
         success: false,
@@ -477,21 +586,16 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.get(
-        `${API_URL}/files/${fileId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await axios.get(`${API_URL}/files/${fileId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       const file = response.data.file;
 
       if (!file) {
-        throw new Error(
-          "Backend did not return file information",
-        );
+        throw new Error("Backend did not return file information");
       }
 
       set({
@@ -506,9 +610,7 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to get file";
+        error.response?.data?.message || error.message || "Failed to get file";
 
       console.error("Get file failed:", error);
 
@@ -545,14 +647,11 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.get(
-        `${API_URL}/files/recent`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await axios.get(`${API_URL}/files/recent`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       const files = response.data.files || [];
 
@@ -607,14 +706,11 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.get(
-        `${API_URL}/files/pinned`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await axios.get(`${API_URL}/files/pinned`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       const files = response.data.files || [];
 
@@ -687,9 +783,7 @@ const useAuthStore = create((set) => ({
       const updatedFile = response.data.file;
 
       if (!updatedFile) {
-        throw new Error(
-          "Backend did not return updated file information",
-        );
+        throw new Error("Backend did not return updated file information");
       }
 
       const isPinned = updatedFile.isPinned;
@@ -739,7 +833,9 @@ const useAuthStore = create((set) => ({
 
         return {
           recentFiles: updatedRecentFiles,
+
           pinnedFiles: updatedPinnedFiles,
+
           error: null,
         };
       });
@@ -748,6 +844,7 @@ const useAuthStore = create((set) => ({
         success: true,
         isPinned,
         file: updatedFile,
+
         message:
           response.data.message ||
           (isPinned
@@ -804,25 +901,24 @@ const useAuthStore = create((set) => ({
         error: null,
       });
 
-      const response = await axios.get(
-        `${API_URL}/auth/me`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await axios.get(`${API_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       const user = response.data.user;
 
-      const userBrandColor =
-        user?.brandColor || "purple";
+      const userBrandColor = user?.brandColor || "purple";
 
       set({
         user,
         token,
+
         brandColor: userBrandColor,
+
         brandColorHex: getBrandColor(userBrandColor),
+
         isLoading: false,
         error: null,
       });
@@ -833,28 +929,33 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message ||
-        "Failed to get current user";
+        error.response?.data?.message || "Failed to get current user";
 
       console.error("Get current user failed:", error);
 
-      if (
-        error.response?.status === 401 ||
-        error.response?.status === 403
-      ) {
+      if (error.response?.status === 401 || error.response?.status === 403) {
         localStorage.removeItem("token");
 
         set({
           user: null,
           token: null,
+
           uploadedFile: null,
+
           recentFiles: [],
           pinnedFiles: [],
+
           searchResults: [],
           searchQuery: "",
           isSearching: false,
+
           brandColor: "purple",
           brandColorHex: "#A855F7",
+
+          usage: defaultUsage,
+
+          isPaymentLoading: false,
+
           authReady: true,
           isLoading: false,
           error: message,
@@ -898,14 +999,11 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.get(
-        `${API_URL}/tts/voice`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await axios.get(`${API_URL}/tts/voice`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       set({
         isLoading: false,
@@ -918,8 +1016,7 @@ const useAuthStore = create((set) => ({
       };
     } catch (error) {
       const message =
-        error.response?.data?.message ||
-        "Failed to get user voice";
+        error.response?.data?.message || "Failed to get user voice";
 
       console.error("Get user voice failed:", error);
 
@@ -987,12 +1084,13 @@ const useAuthStore = create((set) => ({
 
       let speechResponse = response.data;
 
-      // Poll for speech generation if processing
+      // ======================================
+      // POLL FOR SPEECH GENERATION
+      // ======================================
+
       if (speechResponse.pending && speechResponse.jobId) {
         for (let attempt = 0; attempt < 180; attempt += 1) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, 2000),
-          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
 
           const statusResponse = await axios.get(
             `${API_URL}/tts/speech/status/${speechResponse.jobId}`,
@@ -1011,10 +1109,12 @@ const useAuthStore = create((set) => ({
         }
       }
 
+      // ======================================
+      // CHECK SUCCESS
+      // ======================================
+
       if (!speechResponse.success) {
-        throw new Error(
-          speechResponse.message || "Speech generation failed",
-        );
+        throw new Error(speechResponse.message || "Speech generation failed");
       }
 
       if (speechResponse.pending) {
@@ -1026,9 +1126,7 @@ const useAuthStore = create((set) => ({
       const generatedAudio = speechResponse.audio;
 
       if (!generatedAudio?.audioUrl) {
-        throw new Error(
-          "Backend did not return an audio URL",
-        );
+        throw new Error("Backend did not return an audio URL");
       }
 
       set({
@@ -1038,11 +1136,12 @@ const useAuthStore = create((set) => ({
 
       return {
         success: true,
+
         audioUrl: generatedAudio.audioUrl,
+
         audio: generatedAudio,
-        message:
-          speechResponse.message ||
-          "Speech generated successfully",
+
+        message: speechResponse.message || "Speech generated successfully",
       };
     } catch (error) {
       const message =
@@ -1089,40 +1188,39 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.patch(
-        `${API_URL}/auth/settings`,
-        settings,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+      const response = await axios.patch(`${API_URL}/auth/settings`, settings, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-      );
+      });
 
       const updatedUser = response.data.user;
 
       const updatedBrandColor =
-        updatedUser?.brandColor ||
-        settings?.brandColor ||
-        "purple";
+        updatedUser?.brandColor || settings?.brandColor || "purple";
 
       set({
         user: updatedUser,
+
         brandColor: updatedBrandColor,
+
         brandColorHex: getBrandColor(updatedBrandColor),
+
         isLoading: false,
         error: null,
       });
 
       return {
         success: true,
+
         user: updatedUser,
+
         brandColor: updatedBrandColor,
+
         brandColorHex: getBrandColor(updatedBrandColor),
-        message:
-          response.data.message ||
-          "Settings updated successfully",
+
+        message: response.data.message || "Settings updated successfully",
       };
     } catch (error) {
       const message =
@@ -1130,10 +1228,7 @@ const useAuthStore = create((set) => ({
         error.message ||
         "Failed to update settings";
 
-      console.error(
-        "Update account settings failed:",
-        error,
-      );
+      console.error("Update account settings failed:", error);
 
       set({
         isLoading: false,
@@ -1155,7 +1250,6 @@ const useAuthStore = create((set) => ({
     try {
       const searchQuery = query?.trim();
 
-      // Clear search if empty
       if (!searchQuery) {
         set({
           searchResults: [],
@@ -1191,17 +1285,15 @@ const useAuthStore = create((set) => ({
         };
       }
 
-      const response = await axios.get(
-        `${API_URL}/files/search`,
-        {
-          params: {
-            q: searchQuery,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await axios.get(`${API_URL}/files/search`, {
+        params: {
+          q: searchQuery,
         },
-      );
+
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const files = response.data.files || [];
 
@@ -1214,6 +1306,7 @@ const useAuthStore = create((set) => ({
       return {
         success: true,
         files,
+
         count: response.data.count || files.length,
       };
     } catch (error) {
@@ -1249,6 +1342,321 @@ const useAuthStore = create((set) => ({
       isSearching: false,
       error: null,
     });
+  },
+
+  // ==========================================
+  // GET USAGE
+  // ==========================================
+
+  getUsage: async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return {
+          success: false,
+          message: "Authentication required",
+        };
+      }
+
+      const response = await axios.get(`${API_URL}/usage`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const backendUsage = response.data.usage;
+
+      if (backendUsage) {
+        set((state) => ({
+          usage: {
+            ...state.usage,
+            ...backendUsage,
+
+            uploads: {
+              ...state.usage.uploads,
+              ...(backendUsage.uploads || {}),
+            },
+
+            downloads: {
+              ...state.usage.downloads,
+              ...(backendUsage.downloads || {}),
+            },
+
+            subscription: {
+              ...state.usage.subscription,
+              ...(backendUsage.subscription || {}),
+            },
+          },
+        }));
+      }
+
+      return {
+        success: true,
+        usage: backendUsage,
+      };
+    } catch (error) {
+      const message = error.response?.data?.message || "Failed to get usage.";
+
+      console.error("Get usage failed:", error);
+
+      return {
+        success: false,
+        message,
+      };
+    }
+  },
+
+  // ==========================================
+  // INITIALIZE PREMIUM PAYMENT
+  // ==========================================
+
+  initializePremiumPayment: async () => {
+    try {
+      set({
+        isPaymentLoading: true,
+        error: null,
+      });
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        set({
+          isPaymentLoading: false,
+          error: "Authentication required",
+        });
+
+        return {
+          success: false,
+          message: "Authentication required",
+        };
+      }
+
+      const response = await axios.post(
+        `${API_URL}/payments/initialize`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      console.log("Paystack initialization response:", response.data);
+
+      set({
+        isPaymentLoading: false,
+        error: null,
+      });
+
+      return {
+        success: true,
+        ...response.data,
+      };
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to initialize payment.";
+
+      console.error("Initialize payment failed:", error);
+
+      set({
+        isPaymentLoading: false,
+        error: message,
+      });
+
+      return {
+        success: false,
+        message,
+      };
+    }
+  },
+
+  // ==========================================
+  // VERIFY PREMIUM PAYMENT
+  // ==========================================
+
+  verifyPremiumPayment: async (reference) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return {
+          success: false,
+          message: "Authentication required",
+        };
+      }
+
+      if (!reference) {
+        return {
+          success: false,
+          message: "Payment reference is required",
+        };
+      }
+
+      const response = await axios.post(
+        `${API_URL}/payments/verify`,
+        {
+          reference,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      console.log("Paystack verification response:", response.data);
+
+      const user = response.data.user;
+
+      const userBrandColor = user?.brandColor || "purple";
+
+      set({
+        user,
+        token,
+        brandColor: userBrandColor,
+        brandColorHex: getBrandColor(userBrandColor),
+        error: null,
+      });
+
+      // Refresh authoritative usage
+      await useAuthStore.getState().getUsage();
+
+      return {
+        success: true,
+        user,
+        message: response.data.message || "Payment verified successfully",
+      };
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Payment verification failed.";
+
+      console.error("Payment verification failed:", error);
+
+      set({
+        error: message,
+      });
+
+      return {
+        success: false,
+        message,
+      };
+    }
+  },
+
+  // ==========================================
+  // DOWNLOAD AUDIO
+  // ==========================================
+
+  downloadAudio: async (audioId, fileName = "sonar-audio.mp3") => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return {
+          success: false,
+          message: "Authentication required",
+        };
+      }
+
+      if (!audioId) {
+        return {
+          success: false,
+          message: "Audio ID is required",
+        };
+      }
+
+      const response = await axios.get(
+        `${API_URL}/tts/audio/${audioId}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+
+          responseType: "blob",
+        },
+      );
+
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"] || "audio/mpeg",
+      });
+
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = blobUrl;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(blobUrl);
+
+      // Refresh usage
+      await useAuthStore.getState().getUsage();
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      const responseData = error.response?.data;
+
+      if (responseData instanceof Blob) {
+        try {
+          const text = await responseData.text();
+
+          const parsed = JSON.parse(text);
+
+          if (parsed.usage) {
+            set((state) => ({
+              usage: {
+                ...state.usage,
+                ...parsed.usage,
+
+                downloads: {
+                  ...state.usage.downloads,
+                  ...(parsed.usage.downloads || parsed.usage),
+                },
+              },
+            }));
+          }
+
+          return {
+            success: false,
+
+            message: parsed.message || "Audio download failed.",
+          };
+        } catch {
+          // Ignore parsing error
+        }
+      }
+
+      return {
+        success: false,
+
+        message: error.message || "Audio download failed.",
+      };
+    }
+  },
+
+  // ==========================================
+  // GET CURRENT BRAND COLOR HEX
+  // ==========================================
+
+  getBrandColorHex: () => {
+    const state = useAuthStore.getState();
+
+    return state.brandColorHex || getBrandColor(state.brandColor || "purple");
   },
 }));
 
