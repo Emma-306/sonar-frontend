@@ -1078,13 +1078,11 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               "
               style={premiumGradientStyle}
             >
-              <svg
-                className="h-3.5 w-3.5 shrink-0"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.8 5.6 21.2 8 14 2 9.2h7.6z" />
-              </svg>
+              <img
+                src={assets.sparkle}
+                alt=""
+                className="h-3.5 w-3.5 shrink-0 object-contain"
+              />
 
               <span>Upgrade to Pro</span>
             </NavLink>
@@ -1095,13 +1093,11 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               className="mb-4 flex h-10 w-full items-center justify-center gap-2 rounded-lg px-2 text-[11px] font-medium text-white shadow-sm sm:text-[12px]"
               style={premiumGradientStyle}
             >
-              <svg
-                className="h-3.5 w-3.5 shrink-0"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.8 5.6 21.2 8 14 2 9.2h7.6z" />
-              </svg>
+              <img
+                src={assets.sparkle}
+                alt=""
+                className="h-3.5 w-3.5 shrink-0 object-contain"
+              />
 
               <span>Premium Member</span>
             </div>
