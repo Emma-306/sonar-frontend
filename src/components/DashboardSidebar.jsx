@@ -1079,7 +1079,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               style={premiumGradientStyle}
             >
               <img
-                src={assets.sparkle}
+                src={assets.sparkeWhite}
                 alt=""
                 className="h-3.5 w-3.5 shrink-0 object-contain"
               />
@@ -1094,7 +1094,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
               style={premiumGradientStyle}
             >
               <img
-                src={assets.sparkle}
+                src={assets.sparkeWhite}
                 alt=""
                 className="h-3.5 w-3.5 shrink-0 object-contain"
               />

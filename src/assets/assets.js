@@ -5,6 +5,7 @@ import backgroundImage from './background-image.png';
 import sparkle from './sparkle.png';
 import checkmark from './checkmark.png';
 import sonarOrb from './orb-2.webm';
+import sparkeWhite from './sparkle-white.png';
 
 export const assets = {
     brandLogo,
@@ -13,5 +14,6 @@ export const assets = {
     backgroundImage,
     sparkle,
     checkmark,
-    sonarOrb
+    sonarOrb,
+    sparkeWhite,
 }
