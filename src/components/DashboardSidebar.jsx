@@ -630,41 +630,57 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             NEW FILE
         ====================================== */}
 
-        <div
-          className="
-            shrink-0
-            px-3
-            pb-5
-            sm:px-4
-          "
-        >
+        <div className="shrink-0 px-2.5 pb-5 sm:px-3">
           <button
             type="button"
             onClick={handleNewFile}
             className="
               flex
-              h-9
               w-full
               cursor-pointer
               items-center
-              justify-center
               gap-2
               rounded-lg
-              bg-gradient-to-r
-              from-[#3B82F6]
-              to-[#9333EA]
               px-2
-              text-[12px]
-              font-medium
-              text-white
-              shadow-sm
+              py-1.5
+              text-left
+              text-gray-700
               transition
-              hover:opacity-90
-              active:scale-[0.99]
+              hover:bg-gray-100
+              dark:text-gray-200
+              dark:hover:bg-[#171717]
             "
           >
-            <span className="text-[16px] leading-none">+</span>
-            NEW FILE
+            <span
+              className="
+                flex
+                h-5
+                w-5
+                items-center
+                justify-center
+                rounded-md
+                text-[16px]
+                font-medium
+                leading-none
+                text-gray-500
+                dark:text-gray-400
+              "
+            >
+              +
+            </span>
+
+            <span
+              className="
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-wider
+                text-gray-500
+                dark:text-gray-400
+              "
+            >
+              New File
+            </span>
           </button>
         </div>
 
