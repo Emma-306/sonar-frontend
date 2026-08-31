@@ -1052,6 +1052,70 @@ const useAuthStore = create((set) => ({
   },
 
   // ==========================================
+  // PREVIEW VOICE
+  // ==========================================
+
+  previewVoice: async ({ accent, gender, text = "Hello there" }) => {
+    try {
+      set({
+        isLoading: true,
+        error: null,
+      });
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        set({
+          isLoading: false,
+          error: "Authentication required",
+        });
+
+        return {
+          success: false,
+          message: "Authentication required",
+        };
+      }
+
+      const response = await axios.post(
+        `${API_URL}/tts/preview`,
+        { accent, gender, text },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      set({
+        isLoading: false,
+        error: null,
+      });
+
+      return {
+        success: true,
+        audioUrl: response.data.audioUrl,
+        voiceModel: response.data.voiceModel,
+      };
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "Failed to preview voice";
+
+      console.error("Preview voice failed:", error);
+
+      set({
+        isLoading: false,
+        error: message,
+      });
+
+      return {
+        success: false,
+        message,
+      };
+    }
+  },
+
+  // ==========================================
   // GENERATE USER SPEECH
   // ==========================================
 

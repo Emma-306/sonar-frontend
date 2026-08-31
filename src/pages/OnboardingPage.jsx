@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Visualizer from "../components/Visualizer";
 import { assets } from "../assets/assets.js";
 import useAuthStore from "../stores/authStore.js";
-
 
 // ============================================================
 // ACCENTS
@@ -70,9 +69,8 @@ const OnboardingPage = () => {
   // AUTH STORE
   // ==========================================================
 
-  const completeOnboarding = useAuthStore(
-    (state) => state.completeOnboarding
-  );
+  const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
+  const previewVoice = useAuthStore((state) => state.previewVoice);
 
   const isLoading = useAuthStore((state) => state.isLoading);
   const authError = useAuthStore((state) => state.error);
@@ -85,23 +83,70 @@ const OnboardingPage = () => {
   const [voice, setVoice] = useState(null);
   const [accent, setAccent] = useState(null);
   const [brandColor, setBrandColor] = useState("purple");
+  const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
+  const [voicePreviewError, setVoicePreviewError] = useState("");
+  const previewAudioRef = useRef(null);
 
   // ==========================================================
   // ACTIVE BRAND COLOR
   // ==========================================================
 
   const activeColor =
-    brandColors.find((color) => color.id === brandColor)?.color ||
-    "#A855F7";
+    brandColors.find((color) => color.id === brandColor)?.color || "#A855F7";
 
   // ==========================================================
   // FORM VALIDATION
   // ==========================================================
 
-  const canContinue =
-    name.trim() !== "" &&
-    voice !== null &&
-    accent !== null;
+  const canContinue = name.trim() !== "" && voice !== null && accent !== null;
+
+  // ==========================================================
+  // PREVIEW VOICE
+  // ==========================================================
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current.src = "";
+      }
+    };
+  }, []);
+
+  const handleVoicePreview = async () => {
+    if (!voice || !accent) {
+      return;
+    }
+
+    setVoicePreviewError("");
+    setIsPreviewingVoice(true);
+
+    const result = await previewVoice({
+      accent,
+      gender: voice,
+      text: "Hello there",
+    });
+
+    if (!result.success) {
+      setVoicePreviewError(result.message || "Failed to preview voice.");
+      setIsPreviewingVoice(false);
+      return;
+    }
+
+    if (previewAudioRef.current) {
+      previewAudioRef.current.src = result.audioUrl;
+      previewAudioRef.current.load();
+      previewAudioRef.current.currentTime = 0;
+      previewAudioRef.current.play().catch(() => {
+        setVoicePreviewError("Your browser blocked the preview audio.");
+      });
+    }
+
+    setIsPreviewingVoice(false);
+  };
 
   // ==========================================================
   // COMPLETE ONBOARDING
@@ -117,10 +162,7 @@ const OnboardingPage = () => {
       brandColor,
     };
 
-    console.log(
-      "Submitting onboarding preferences:",
-      preferences
-    );
+    console.log("Submitting onboarding preferences:", preferences);
 
     // Send onboarding data to backend
     const result = await completeOnboarding(preferences);
@@ -161,7 +203,6 @@ const OnboardingPage = () => {
       ====================================================== */}
 
       <div className="relative z-10 flex min-h-screen w-full">
-
         {/* ====================================================
             LEFT SIDE
         ==================================================== */}
@@ -209,7 +250,6 @@ const OnboardingPage = () => {
               xl:max-w-[420px]
             "
           >
-
             {/* =================================================
                 LOGO
             ================================================= */}
@@ -346,14 +386,11 @@ const OnboardingPage = () => {
                 "
                 style={{
                   borderColor: name ? activeColor : undefined,
-                  boxShadow: name
-                    ? `0 0 0 2px ${activeColor}20`
-                    : undefined,
+                  boxShadow: name ? `0 0 0 2px ${activeColor}20` : undefined,
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = activeColor;
-                  e.currentTarget.style.boxShadow =
-                    `0 0 0 2px ${activeColor}20`;
+                  e.currentTarget.style.boxShadow = `0 0 0 2px ${activeColor}20`;
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = name
@@ -395,8 +432,7 @@ const OnboardingPage = () => {
                   lg:text-[12px]
                 "
               >
-                Choose a voice and accent to personalize your
-                experience.
+                Choose a voice and accent to personalize your experience.
               </p>
 
               <div
@@ -407,7 +443,6 @@ const OnboardingPage = () => {
                   sm:gap-3
                 "
               >
-
                 {/* MALE */}
 
                 <button
@@ -456,9 +491,7 @@ const OnboardingPage = () => {
                 >
                   <span>Male</span>
 
-                  {voice === "male" && (
-                    <SelectionIcon color={activeColor} />
-                  )}
+                  {voice === "male" && <SelectionIcon color={activeColor} />}
                 </button>
 
                 {/* FEMALE */}
@@ -509,11 +542,8 @@ const OnboardingPage = () => {
                 >
                   <span>Female</span>
 
-                  {voice === "female" && (
-                    <SelectionIcon color={activeColor} />
-                  )}
+                  {voice === "female" && <SelectionIcon color={activeColor} />}
                 </button>
-
               </div>
             </div>
 
@@ -534,6 +564,44 @@ const OnboardingPage = () => {
               >
                 Select Accent
               </h2>
+
+              {voice && accent && (
+                <div className="mb-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleVoicePreview}
+                    disabled={isLoading}
+                    className="
+                      flex
+                      items-center
+                      gap-2
+                      rounded-full
+                      border
+                      px-3
+                      py-1.5
+                      text-[10px]
+                      font-medium
+                      transition
+                      sm:text-[11px]
+                    "
+                    style={{
+                      borderColor: activeColor,
+                      color: activeColor,
+                      backgroundColor: `${activeColor}12`,
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="h-3.5 w-3.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 10v4h4l5 5V5L7 10H3Zm13.5 2a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12ZM15 3.23v2.06A7 7 0 0 1 19 12a7 7 0 0 1-4 6.71v2.06A9 9 0 0 0 21 12a9 9 0 0 0-6-8.77Z" />
+                    </svg>
+                    {isPreviewingVoice ? "Playing..." : "Preview: Hello there"}
+                  </button>
+                </div>
+              )}
 
               <div
                 className="
@@ -795,6 +863,26 @@ const OnboardingPage = () => {
               </div>
             )}
 
+            {voicePreviewError && (
+              <div
+                className="
+                  mb-4
+                  rounded-xl
+                  border
+                  border-red-200
+                  bg-red-50
+                  px-3
+                  py-2.5
+                  text-[11px]
+                  text-red-600
+                "
+              >
+                {voicePreviewError}
+              </div>
+            )}
+
+            <audio ref={previewAudioRef} preload="auto" />
+
             {/* =================================================
                 CONTINUE BUTTON
             ================================================= */}
@@ -842,7 +930,6 @@ const OnboardingPage = () => {
                       border-t-white
                     "
                   />
-
                   Saving...
                 </>
               ) : (
@@ -947,11 +1034,7 @@ const SelectionIcon = ({ color }) => {
         strokeWidth="3"
         className="h-2.5 w-2.5"
       >
-        <path
-          d="M5 12l5 5L20 7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>
   );

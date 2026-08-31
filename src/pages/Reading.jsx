@@ -32,6 +32,8 @@ const Reading = () => {
 
   const usage = useAuthStore((state) => state.usage);
 
+  const user = useAuthStore((state) => state.user);
+
   const brandColorHex = useAuthStore((state) => state.brandColorHex);
   const defaultPurple = "#7145FF";
 
@@ -293,6 +295,26 @@ const Reading = () => {
   }, [fileId]);
 
   // ============================================================
+  // REFRESH VOICE WHEN ACCOUNT SETTINGS CHANGE
+  // ============================================================
+
+  useEffect(() => {
+    if (!user?.onboarding) {
+      return;
+    }
+
+    setVoice({
+      accent: user.onboarding.preferredAccent,
+      gender: user.onboarding.preferredVoiceGender,
+    });
+
+    setVoiceError(null);
+  }, [
+    user?.onboarding?.preferredAccent,
+    user?.onboarding?.preferredVoiceGender,
+  ]);
+
+  // ============================================================
   // GENERATE SPEECH
   // ============================================================
 
@@ -406,7 +428,7 @@ const Reading = () => {
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file?.extractedText, fileId]);
+  }, [file?.extractedText, fileId, voice?.accent, voice?.gender]);
 
   // ============================================================
   // VOICE DISPLAY NAME
