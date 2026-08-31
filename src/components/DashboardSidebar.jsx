@@ -30,6 +30,8 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
   const brandColorHex = useAuthStore((state) => state.brandColorHex);
 
+  const brandColor = useAuthStore((state) => state.brandColor || "purple");
+
   // ========================================
   // RECENT FILES
   // ========================================
@@ -76,9 +78,22 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
   const currentPlan = user?.plan || usage?.plan || "free";
 
-  const premiumGradientStyle = {
-    backgroundImage: `linear-gradient(135deg, ${brandColorHex} 0%, #9333EA 100%)`,
-  };
+  const premiumGradientStyle = (() => {
+    const gradientMap = {
+      purple: ["#A855F7", "#8B5CF6"],
+      blue: ["#409CF2", "#7C3AED"],
+      coral: ["#FF6B6B", "#F97316"],
+      pink: ["#EC137F", "#A855F7"],
+      teal: ["#00D2FF", "#3B82F6"],
+    };
+
+    const [start, end] = gradientMap[brandColor] || [brandColorHex, "#9333EA"];
+
+    return {
+      backgroundImage: `linear-gradient(135deg, ${start} 0%, ${end} 100%)`,
+      boxShadow: `0 10px 18px ${start}33`,
+    };
+  })();
 
   // ========================================
   // LOCAL STATE
