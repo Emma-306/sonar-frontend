@@ -899,23 +899,25 @@ const OnboardingPage = () => {
                 justify-center
                 gap-2
                 rounded-xl
-                bg-black
                 text-[12px]
                 font-medium
                 text-white
                 transition
-
-                hover:bg-gray-900
-
                 disabled:cursor-not-allowed
                 disabled:opacity-40
-
                 sm:h-11
                 sm:w-[140px]
                 sm:text-[13px]
-
                 lg:w-[150px]
               "
+              style={
+                canContinue && !isLoading
+                  ? {
+                      backgroundColor: activeColor,
+                      boxShadow: `0 10px 22px ${activeColor}55`,
+                    }
+                  : { backgroundColor: "#000000" }
+              }
             >
               {isLoading ? (
                 <>
