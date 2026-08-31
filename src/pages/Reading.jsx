@@ -33,6 +33,7 @@ const Reading = () => {
   const usage = useAuthStore((state) => state.usage);
 
   const brandColorHex = useAuthStore((state) => state.brandColorHex);
+  const defaultPurple = "#7145FF";
 
   // ============================================================
   // STATE
@@ -920,13 +921,13 @@ const Reading = () => {
         <p
           key={`sentence-${sentenceIndex}`}
           ref={isActiveSentence ? activeSentenceRef : null}
-          className="mb-[6px] transition-all duration-200"
+          className="mb-[2px] transition-all duration-200"
           style={
             isActiveSentence
               ? {
                   color: brandColorHex,
                   fontSize: "1.06em",
-                  lineHeight: 1.7,
+                  lineHeight: 1.6,
                   fontWeight: 500,
                 }
               : {
@@ -958,7 +959,7 @@ const Reading = () => {
           <div
             className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#7145FF]/20 border-t-[#7145FF]"
             style={{
-              borderTopColor: brandColorHex,
+              borderTopColor: defaultPurple,
             }}
           />
 
@@ -1059,7 +1060,7 @@ const Reading = () => {
               <div
                 className="absolute inset-0 scale-[1.1] rounded-full blur-[28px] sm:blur-[30px]"
                 style={{
-                  backgroundColor: `${brandColorHex}33`,
+                  backgroundColor: `${defaultPurple}33`,
                 }}
               />
 
@@ -1116,7 +1117,7 @@ const Reading = () => {
                 <div
                   className="h-3 w-3 animate-spin rounded-full border-2 border-[#7145FF]/20"
                   style={{
-                    borderTopColor: brandColorHex,
+                    borderTopColor: defaultPurple,
                   }}
                 />
 
@@ -1218,7 +1219,7 @@ const Reading = () => {
                       className="pointer-events-none absolute left-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full"
                       style={{
                         width: `${volumePercentage}%`,
-                        backgroundColor: brandColorHex,
+                        backgroundColor: defaultPurple,
                       }}
                     />
 
@@ -1245,7 +1246,7 @@ const Reading = () => {
                     className="absolute left-0 top-0 h-full rounded-full"
                     style={{
                       width: `${progress}%`,
-                      backgroundColor: brandColorHex,
+                      backgroundColor: defaultPurple,
                     }}
                   />
 
@@ -1362,7 +1363,7 @@ const Reading = () => {
                   aria-label={isPlaying ? "Pause" : "Play"}
                   className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full text-white shadow-[0_8px_22px_rgba(105,71,255,0.3)] transition hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[50px] sm:w-[50px]"
                   style={{
-                    backgroundColor: brandColorHex,
+                    backgroundColor: defaultPurple,
                   }}
                 >
                   {isPlaying ? (
@@ -1433,14 +1434,14 @@ const Reading = () => {
                   }
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#D5D8DD] text-[#8C9BAE] transition hover:bg-[#F0F1F3] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[40px] sm:w-[40px] dark:border-white/10 dark:hover:bg-white/5"
                   style={{
-                    "--download-hover-color": brandColorHex,
+                    "--download-hover-color": defaultPurple,
                   }}
                 >
                   {isDownloading ? (
                     <div
                       className="h-4 w-4 animate-spin rounded-full border-2 border-[#7145FF]/20"
                       style={{
-                        borderTopColor: brandColorHex,
+                        borderTopColor: defaultPurple,
                       }}
                     />
                   ) : (
@@ -1479,7 +1480,7 @@ const Reading = () => {
           <div
             className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[9px] sm:h-[40px] sm:w-[40px]"
             style={{
-              backgroundColor: brandColorHex,
+              backgroundColor: defaultPurple,
             }}
           >
             <svg
@@ -1518,7 +1519,7 @@ const Reading = () => {
                 className="absolute left-0 top-0 h-full rounded-full"
                 style={{
                   width: `${progress}%`,
-                  backgroundColor: brandColorHex,
+                  backgroundColor: defaultPurple,
                 }}
               />
 
