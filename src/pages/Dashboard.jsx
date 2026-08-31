@@ -36,6 +36,7 @@ const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
+  const [isDragActive, setIsDragActive] = useState(false);
 
   // ========================================
   // AUTH STORE
@@ -153,9 +154,7 @@ const Dashboard = () => {
   // HANDLE FILE CHANGE
   // ========================================
 
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-
+  const validateAndSetFile = (file, inputElement = null) => {
     if (!file) return;
 
     setError("");
@@ -172,7 +171,9 @@ const Dashboard = () => {
           : "You've reached your free PDF upload limit for today. Upgrade to Premium for 10 uploads per day.",
       );
 
-      event.target.value = "";
+      if (inputElement) {
+        inputElement.value = "";
+      }
 
       return;
     }
@@ -184,7 +185,9 @@ const Dashboard = () => {
     if (file.type !== "application/pdf") {
       setError("Please select a PDF file.");
 
-      event.target.value = "";
+      if (inputElement) {
+        inputElement.value = "";
+      }
 
       return;
     }
@@ -196,7 +199,9 @@ const Dashboard = () => {
     if (file.size > MAX_FILE_SIZE) {
       setError("File is too large. Please select a PDF smaller than 25MB.");
 
-      event.target.value = "";
+      if (inputElement) {
+        inputElement.value = "";
+      }
 
       return;
     }
@@ -206,6 +211,40 @@ const Dashboard = () => {
     // ======================================
 
     setSelectedFile(file);
+    setIsDragActive(false);
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+
+    validateAndSetFile(file, event.target);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+
+    if (selectedFile || isLoading || uploadLimitReached) return;
+
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+
+    if (event.currentTarget.contains(event.relatedTarget)) return;
+
+    setIsDragActive(false);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragActive(false);
+
+    if (selectedFile || isLoading || uploadLimitReached) return;
+
+    const file = event.dataTransfer.files?.[0];
+
+    validateAndSetFile(file);
   };
 
   // ========================================
@@ -524,6 +563,10 @@ const Dashboard = () => {
         ==================================== */}
 
         <div
+          onDragEnter={handleDragOver}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           className="
             flex
             w-full
@@ -548,6 +591,15 @@ const Dashboard = () => {
             dark:bg-[#0c0c0c]
             dark:hover:border-[#444]
           "
+          style={
+            isDragActive
+              ? {
+                  borderColor: brandColorHex,
+                  backgroundColor: `${brandColorHex}12`,
+                  boxShadow: `0 0 0 1px ${brandColorHex}33 inset`,
+                }
+              : undefined
+          }
         >
           {/* UPLOAD ICON */}
 
