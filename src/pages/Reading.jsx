@@ -40,7 +40,7 @@ const Reading = () => {
   const defaultPurple = "#7145FF";
   const activeHighlightColor = brandColorHex || defaultPurple;
 
-  const getHueRotate = (hex) => {
+  const getOrbHueRotate = (hex) => {
     if (!hex) return 0;
 
     const cleanHex = hex.replace("#", "");
@@ -78,10 +78,35 @@ const Reading = () => {
       hue *= 60;
     }
 
-    return Math.round((hue + 360) % 360);
+    const baseOrbHue = 300;
+    return Math.round((hue + 360 - baseOrbHue) % 360);
   };
 
-  const sonarHueRotate = getHueRotate(activeHighlightColor);
+  const sonarHueRotate = getOrbHueRotate(activeHighlightColor);
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) return;
+
+    const attemptPlay = async () => {
+      video.muted = true;
+      try {
+        await video.play();
+      } catch (error) {
+        console.warn("Reading orb autoplay failed:", error);
+      }
+    };
+
+    if (video.readyState >= 2) {
+      attemptPlay();
+      return;
+    }
+
+    video.addEventListener("canplay", attemptPlay, { once: true });
+
+    return () => video.removeEventListener("canplay", attemptPlay);
+  }, [activeHighlightColor]);
 
   // ============================================================
   // STATE
@@ -1218,6 +1243,7 @@ const Reading = () => {
                 loop
                 muted
                 playsInline
+                preload="auto"
                 style={{
                   filter: `hue-rotate(${sonarHueRotate}deg) saturate(1.3) brightness(1.05)`,
                 }}

@@ -20,6 +20,7 @@ const PREMIUM_UPLOAD_LIMIT = 10;
 
 const Dashboard = () => {
   const fileInputRef = useRef(null);
+  const orbRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -62,7 +63,7 @@ const Dashboard = () => {
 
   const brandColorHex = useAuthStore((state) => state.brandColorHex);
 
-  const getHueRotate = (hex) => {
+  const getOrbHueRotate = (hex) => {
     if (!hex) return 0;
 
     const cleanHex = hex.replace("#", "");
@@ -100,10 +101,35 @@ const Dashboard = () => {
       hue *= 60;
     }
 
-    return Math.round((hue + 360) % 360);
+    const baseOrbHue = 300;
+    return Math.round((hue + 360 - baseOrbHue) % 360);
   };
 
-  const sonarHueRotate = getHueRotate(brandColorHex);
+  const sonarHueRotate = getOrbHueRotate(brandColorHex);
+
+  useEffect(() => {
+    const video = orbRef.current;
+
+    if (!video) return;
+
+    const attemptPlay = async () => {
+      video.muted = true;
+      try {
+        await video.play();
+      } catch (error) {
+        console.warn("Orb autoplay failed:", error);
+      }
+    };
+
+    if (video.readyState >= 2) {
+      attemptPlay();
+      return;
+    }
+
+    video.addEventListener("canplay", attemptPlay, { once: true });
+
+    return () => video.removeEventListener("canplay", attemptPlay);
+  }, [brandColorHex]);
 
   // ========================================
   // USER PLAN
@@ -435,11 +461,13 @@ const Dashboard = () => {
           "
         >
           <video
+            ref={orbRef}
             src={assets.sonarOrb}
             autoPlay
             loop
             muted
             playsInline
+            preload="auto"
             aria-label="Sonar"
             style={{
               filter: `hue-rotate(${sonarHueRotate}deg) saturate(1.3) brightness(1.05)`,

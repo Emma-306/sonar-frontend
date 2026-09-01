@@ -64,6 +64,7 @@ const brandColors = [
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
+  const orbRef = useRef(null);
 
   // ==========================================================
   // AUTH STORE
@@ -94,7 +95,7 @@ const OnboardingPage = () => {
   const activeColor =
     brandColors.find((color) => color.id === brandColor)?.color || "#A855F7";
 
-  const getHueRotate = (hex) => {
+  const getOrbHueRotate = (hex) => {
     if (!hex) return 0;
 
     const cleanHex = hex.replace("#", "");
@@ -132,10 +133,35 @@ const OnboardingPage = () => {
       hue *= 60;
     }
 
-    return Math.round((hue + 360) % 360);
+    const baseOrbHue = 300;
+    return Math.round((hue + 360 - baseOrbHue) % 360);
   };
 
-  const sonarHueRotate = getHueRotate(activeColor);
+  const sonarHueRotate = getOrbHueRotate(activeColor);
+
+  useEffect(() => {
+    const video = orbRef.current;
+
+    if (!video) return;
+
+    const attemptPlay = async () => {
+      video.muted = true;
+      try {
+        await video.play();
+      } catch (error) {
+        console.warn("Onboarding orb autoplay failed:", error);
+      }
+    };
+
+    if (video.readyState >= 2) {
+      attemptPlay();
+      return;
+    }
+
+    video.addEventListener("canplay", attemptPlay, { once: true });
+
+    return () => video.removeEventListener("canplay", attemptPlay);
+  }, [activeColor]);
 
   // ==========================================================
   // FORM VALIDATION
@@ -1024,11 +1050,13 @@ const OnboardingPage = () => {
               "
             >
               <video
+                ref={orbRef}
                 src={assets.sonarOrb}
                 autoPlay
                 loop
                 muted
                 playsInline
+                preload="auto"
                 aria-label="Sonar"
                 style={{
                   filter: `hue-rotate(${sonarHueRotate}deg) saturate(1.3) brightness(1.05)`,
