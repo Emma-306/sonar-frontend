@@ -1076,7 +1076,7 @@ const Reading = () => {
   // ============================================================
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[#F8F9FB] dark:bg-[#111113] lg:h-screen">
+    <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[#F5F5F5] dark:bg-[#111113] lg:h-screen">
       {/* THEME TOGGLE */}
       <div className="absolute right-4 top-2 z-50 sm:right-6 sm:top-5 md:right-8">
         <ThemeToggle />
@@ -1206,7 +1206,7 @@ const Reading = () => {
           </div>
 
           {/* CURRENTLY READING */}
-          <aside className="flex min-h-0 w-full shrink-0 flex-col items-center rounded-[16px] bg-[#F7F7F7] px-5 py-6 sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 lg:h-full lg:w-[350px] lg:overflow-y-auto xl:w-[390px] dark:bg-[#1C1C1E]">
+          <aside className="flex min-h-0 w-full shrink-0 flex-col items-center rounded-[16px] bg-[#F5F5F5] px-5 py-6 sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 lg:h-full lg:w-[350px] lg:overflow-y-auto xl:w-[390px] dark:bg-[#1C1C1E]">
             {/* HEADER */}
             <div className="mb-5 flex w-full items-center justify-between sm:mb-6">
               <h2 className="text-[16px] font-semibold text-[#171717] dark:text-white sm:text-[17px]">
