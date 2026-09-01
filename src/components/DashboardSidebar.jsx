@@ -1191,7 +1191,7 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
                 onClose?.();
               }}
               style={{
-                color: brandColorHex,
+                color: "#777777",
               }}
               className="
                 flex
