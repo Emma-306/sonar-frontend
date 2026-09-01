@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import { assets } from "../assets/assets.js";
 import { useTheme } from "../context/UseTheme.jsx";
 import useAuthStore, { brandColors } from "../stores/authStore.js";
@@ -76,6 +78,8 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
   // ========================================
   // THEME
   // ========================================
+
+  const navigate = useNavigate();
 
   const { darkMode, toggleTheme } = useTheme();
 
@@ -190,6 +194,8 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     brandColors.find((color) => color.id === brandColor)?.color ||
     brandColorHex ||
     "#A855F7";
+
+  const isPremium = (user?.plan || "free").toLowerCase() === "premium";
 
   const premiumGradientStyle = (() => {
     const gradientMap = {
@@ -611,6 +617,13 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
             <button
               type="button"
+              onClick={() => {
+                if (isPremium) return;
+
+                navigate("/plan-comparison");
+                onClose?.();
+              }}
+              disabled={isPremium}
               className="
                 flex
                 items-center
@@ -623,16 +636,26 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                 font-medium
                 text-white
                 transition-opacity
+                disabled:cursor-not-allowed
+                disabled:opacity-60
                 hover:opacity-90
               "
-              style={premiumGradientStyle}
+              style={
+                isPremium
+                  ? {
+                      background:
+                        "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)",
+                      boxShadow: "none",
+                    }
+                  : premiumGradientStyle
+              }
             >
               <img
                 src={assets.sparkeWhite}
                 alt=""
                 className="h-4 w-4 shrink-0 object-contain"
               />
-              Go Pro
+              {isPremium ? "Premium" : "Go Pro"}
             </button>
           </div>
 
