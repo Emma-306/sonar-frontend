@@ -94,6 +94,49 @@ const OnboardingPage = () => {
   const activeColor =
     brandColors.find((color) => color.id === brandColor)?.color || "#A855F7";
 
+  const getHueRotate = (hex) => {
+    if (!hex) return 0;
+
+    const cleanHex = hex.replace("#", "");
+    const normalizedHex =
+      cleanHex.length === 3
+        ? cleanHex
+            .split("")
+            .map((char) => char + char)
+            .join("")
+        : cleanHex;
+
+    const numericValue = Number.parseInt(normalizedHex, 16);
+    const r = (numericValue >> 16) & 255;
+    const g = (numericValue >> 8) & 255;
+    const b = numericValue & 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+
+    let hue = 0;
+
+    if (delta !== 0) {
+      switch (max) {
+        case r:
+          hue = ((g - b) / delta) % 6;
+          break;
+        case g:
+          hue = (b - r) / delta + 2;
+          break;
+        default:
+          hue = (r - g) / delta + 4;
+      }
+
+      hue *= 60;
+    }
+
+    return Math.round((hue + 360) % 360);
+  };
+
+  const sonarHueRotate = getHueRotate(activeColor);
+
   // ==========================================================
   // FORM VALIDATION
   // ==========================================================
@@ -987,6 +1030,9 @@ const OnboardingPage = () => {
                 muted
                 playsInline
                 aria-label="Sonar"
+                style={{
+                  filter: `hue-rotate(${sonarHueRotate}deg) saturate(1.3) brightness(1.05)`,
+                }}
                 className="
                   block
                   h-auto
