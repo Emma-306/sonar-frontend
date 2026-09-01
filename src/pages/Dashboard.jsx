@@ -63,6 +63,8 @@ const Dashboard = () => {
 
   const brandColorHex = useAuthStore((state) => state.brandColorHex);
 
+  const ORB_BASE_HUE = 268;
+
   const getOrbHueRotate = (hex) => {
     if (!hex) return 0;
 
@@ -101,8 +103,10 @@ const Dashboard = () => {
       hue *= 60;
     }
 
-    const baseOrbHue = 300;
-    return Math.round((hue + 360 - baseOrbHue) % 360);
+    let orbRotation = hue - ORB_BASE_HUE;
+    orbRotation = ((((orbRotation + 180) % 360) + 360) % 360) - 180;
+
+    return Math.round(orbRotation);
   };
 
   const sonarHueRotate = getOrbHueRotate(brandColorHex);
