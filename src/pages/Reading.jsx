@@ -1003,7 +1003,7 @@ const Reading = () => {
           style={
             isActiveSentence
               ? {
-                  color: brandColorHex || defaultPurple,
+                  color: activeHighlightColor,
                   fontSize: "1.06em",
                   lineHeight: 1.6,
                   fontWeight: 500,
@@ -1037,7 +1037,7 @@ const Reading = () => {
           <div
             className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#7145FF]/20 border-t-[#7145FF]"
             style={{
-              borderTopColor: defaultPurple,
+              borderTopColor: activeHighlightColor,
             }}
           />
 
@@ -1082,6 +1082,19 @@ const Reading = () => {
         <ThemeToggle />
       </div>
 
+      <audio
+        ref={audioRef}
+        preload="metadata"
+        onPlay={handleAudioPlay}
+        onPause={handleAudioPause}
+        onTimeUpdate={handleAudioTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onDurationChange={handleDurationChange}
+        onCanPlay={handleCanPlay}
+        onEnded={handleAudioEnded}
+        onError={handleAudioError}
+      />
+
       {/* MAIN */}
       <main className="flex min-h-0 w-full flex-1 justify-center overflow-y-auto px-3 py-[65px] sm:px-5 md:px-6 lg:overflow-hidden lg:px-8 lg:py-[55px] xl:px-10">
         <div className="flex min-h-0 w-full max-w-[1250px] flex-1 flex-col gap-4 sm:gap-5 md:gap-6 lg:flex-row lg:gap-7">
@@ -1102,13 +1115,16 @@ const Reading = () => {
             </article>
 
             {/* BOTTOM PLAYER — UNDER DOCUMENT ONLY */}
-            <div className="w-full shrink-0">
-              <div className="flex min-h-[58px] items-center gap-3 rounded-[13px] bg-[#252528] px-3 py-2.5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] sm:min-h-[65px] sm:gap-4 sm:px-4 md:h-[72px] md:px-5">
+            <div className="w-full shrink-0 lg:hidden">
+              <div
+                className="flex min-h-[58px] items-center gap-3 rounded-[13px] bg-[#252528] px-3 py-2.5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] sm:min-h-[65px] sm:gap-4 sm:px-4 md:h-[72px] md:px-5"
+                style={{ boxShadow: `0 8px 25px ${activeHighlightColor}44` }}
+              >
                 {/* FILE ICON */}
                 <div
                   className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[9px] sm:h-[40px] sm:w-[40px]"
                   style={{
-                    backgroundColor: defaultPurple,
+                    backgroundColor: activeHighlightColor,
                   }}
                 >
                   <svg
@@ -1138,13 +1154,13 @@ const Reading = () => {
                 </div>
 
                 {/* BOTTOM PROGRESS */}
-                <div className="mx-1 hidden min-w-0 flex-1 sm:block md:mx-3">
+                <div className="mx-1 min-w-0 flex-1 md:mx-3">
                   <div className="relative h-[3px] w-full rounded-full bg-white/10">
                     <div
                       className="absolute left-0 top-0 h-full rounded-full"
                       style={{
                         width: `${progress}%`,
-                        backgroundColor: defaultPurple,
+                        backgroundColor: activeHighlightColor,
                       }}
                     />
 
@@ -1170,6 +1186,68 @@ const Reading = () => {
                   <span className="rounded-[4px] bg-white/10 px-1.5 py-1 text-[8px] sm:px-2 sm:text-[9px]">
                     {speed}x
                   </span>
+
+                  <button
+                    type="button"
+                    onClick={skipBackward}
+                    disabled={!audioUrl}
+                    aria-label="Skip backward 10 seconds"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 14 5 10l4-4" />
+                      <path d="M5 10h8a5 5 0 0 1 5 5v1" />
+                      <text
+                        x="10"
+                        y="21"
+                        fontSize="6"
+                        fill="currentColor"
+                        stroke="none"
+                      >
+                        10
+                      </text>
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={skipForward}
+                    disabled={!audioUrl}
+                    aria-label="Skip forward 10 seconds"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m15 14 4-4-4-4" />
+                      <path d="M19 10h-8a5 5 0 0 0-5 5v1" />
+                      <text
+                        x="9"
+                        y="21"
+                        fontSize="6"
+                        fill="currentColor"
+                        stroke="none"
+                      >
+                        10
+                      </text>
+                    </svg>
+                  </button>
 
                   {/* BOTTOM PLAY BUTTON */}
                   <button
@@ -1200,13 +1278,72 @@ const Reading = () => {
                       </svg>
                     )}
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={restartAudio}
+                    disabled={!audioUrl}
+                    aria-label="Restart audio"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 12a9 9 0 1 0 3-6.7" />
+                      <path d="M3 4v6h6" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadAudio}
+                    disabled={
+                      !audio?.id ||
+                      !audioUrl ||
+                      isGeneratingAudio ||
+                      isDownloading ||
+                      downloadRemaining <= 0
+                    }
+                    aria-label="Download audio"
+                    title="Download audio"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                  >
+                    {isDownloading ? (
+                      <div
+                        className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20"
+                        style={{ borderTopColor: activeHighlightColor }}
+                      />
+                    ) : (
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 3v12" />
+                        <path d="m7 10 5 5 5-5" />
+                        <path d="M5 21h14" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
           {/* CURRENTLY READING */}
-          <aside className="flex min-h-0 w-full shrink-0 flex-col items-center rounded-[16px] bg-[#F5F5F5] px-5 py-6 sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 lg:h-full lg:w-[350px] lg:overflow-y-auto xl:w-[390px] dark:bg-[#1C1C1E]">
+          <aside className="hidden min-h-0 w-full shrink-0 flex-col items-center rounded-[16px] bg-[#F5F5F5] px-5 py-6 sm:rounded-[18px] sm:px-7 sm:py-7 md:px-8 lg:flex lg:h-full lg:w-[350px] lg:overflow-y-auto xl:w-[390px] dark:bg-[#1C1C1E]">
             {/* HEADER */}
             <div className="mb-5 flex w-full items-center justify-between sm:mb-6">
               <h2 className="text-[16px] font-semibold text-[#171717] dark:text-white sm:text-[17px]">
@@ -1236,7 +1373,7 @@ const Reading = () => {
               <div
                 className="absolute inset-0 scale-[1.1] rounded-full blur-[28px] sm:blur-[30px]"
                 style={{
-                  backgroundColor: `${defaultPurple}33`,
+                  backgroundColor: `${activeHighlightColor}33`,
                 }}
               />
 
@@ -1252,20 +1389,6 @@ const Reading = () => {
                   filter: `hue-rotate(${sonarHueRotate}deg) saturate(1.3) brightness(1.05)`,
                 }}
                 className="relative z-10 h-full w-full object-contain"
-              />
-
-              {/* AUDIO */}
-              <audio
-                ref={audioRef}
-                preload="metadata"
-                onPlay={handleAudioPlay}
-                onPause={handleAudioPause}
-                onTimeUpdate={handleAudioTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onDurationChange={handleDurationChange}
-                onCanPlay={handleCanPlay}
-                onEnded={handleAudioEnded}
-                onError={handleAudioError}
               />
             </div>
 
@@ -1293,7 +1416,7 @@ const Reading = () => {
                 <div
                   className="h-3 w-3 animate-spin rounded-full border-2 border-[#7145FF]/20"
                   style={{
-                    borderTopColor: defaultPurple,
+                    borderTopColor: activeHighlightColor,
                   }}
                 />
 
@@ -1385,7 +1508,7 @@ const Reading = () => {
                       className="pointer-events-none absolute left-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full"
                       style={{
                         width: `${volumePercentage}%`,
-                        backgroundColor: defaultPurple,
+                        backgroundColor: activeHighlightColor,
                       }}
                     />
 
@@ -1411,7 +1534,7 @@ const Reading = () => {
                     className="absolute left-0 top-0 h-full rounded-full"
                     style={{
                       width: `${progress}%`,
-                      backgroundColor: defaultPurple,
+                      backgroundColor: activeHighlightColor,
                     }}
                   />
 
@@ -1516,9 +1639,10 @@ const Reading = () => {
                   onClick={togglePlay}
                   disabled={!audioUrl || isGeneratingAudio}
                   aria-label={isPlaying ? "Pause" : "Play"}
-                  className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full text-white shadow-[0_8px_22px_rgba(105,71,255,0.3)] transition hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[50px] sm:w-[50px]"
+                  className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full text-white transition hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-40 sm:h-[50px] sm:w-[50px]"
                   style={{
-                    backgroundColor: defaultPurple,
+                    backgroundColor: activeHighlightColor,
+                    boxShadow: `0 8px 22px ${activeHighlightColor}55`,
                   }}
                 >
                   {isPlaying ? (
@@ -1590,7 +1714,7 @@ const Reading = () => {
                     <div
                       className="h-4 w-4 animate-spin rounded-full border-2 border-[#7145FF]/20"
                       style={{
-                        borderTopColor: defaultPurple,
+                        borderTopColor: activeHighlightColor,
                       }}
                     />
                   ) : (
