@@ -1326,6 +1326,60 @@ const useAuthStore = create((set) => ({
   },
 
   // ==========================================
+  // DELETE FILE
+  // ==========================================
+
+  deleteFile: async (fileId) => {
+    try {
+      if (!fileId) {
+        return {
+          success: false,
+          message: "File ID is required",
+        };
+      }
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return {
+          success: false,
+          message: "Authentication required",
+        };
+      }
+
+      const response = await axios.delete(`${API_URL}/files/${fileId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      set((state) => ({
+        recentFiles: state.recentFiles.filter(
+          (file) => String(file.id || file._id) !== String(fileId),
+        ),
+        pinnedFiles: state.pinnedFiles.filter(
+          (file) => String(file.id || file._id) !== String(fileId),
+        ),
+        error: null,
+      }));
+
+      return {
+        success: true,
+        message: response.data.message || "File deleted successfully",
+      };
+    } catch (error) {
+      const message = error.response?.data?.message || "Failed to delete file";
+
+      set({ error: message });
+
+      return {
+        success: false,
+        message,
+      };
+    }
+  },
+
+  // ==========================================
   // SEARCH FILES
   // ==========================================
 

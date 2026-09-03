@@ -50,6 +50,8 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
 
   const togglePin = useAuthStore((state) => state.togglePin);
 
+  const deleteFile = useAuthStore((state) => state.deleteFile);
+
   // ========================================
   // SEARCH
   // ========================================
@@ -237,6 +239,20 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
   };
 
   // ========================================
+  // DELETE FILE
+  // ========================================
+
+  const handleDeleteFile = async (event, file) => {
+    event.stopPropagation();
+
+    const fileId = getFileId(file);
+
+    if (!fileId || !window.confirm("Delete this PDF permanently?")) return;
+
+    await deleteFile(fileId);
+  };
+
+  // ========================================
   // CHECK IF SEARCH IS ACTIVE
   // ========================================
 
@@ -373,6 +389,47 @@ const DashboardSidebar = ({ isOpen = false, onClose }) => {
             <path d="M9 3h6" />
             <path d="M10 3v5l-4 4v2h12v-2l-4-4V3" />
             <path d="M12 14v7" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          onClick={(event) => handleDeleteFile(event, file)}
+          className="
+            mr-1.5
+            flex
+            h-6
+            w-6
+            shrink-0
+            cursor-pointer
+            items-center
+            justify-center
+            rounded-md
+            text-gray-400
+            opacity-0
+            transition-all
+            active:scale-90
+            group-hover:opacity-100
+            hover:bg-red-100
+            hover:text-red-500
+            dark:hover:bg-red-500/10
+          "
+          aria-label="Delete file"
+          title="Delete file"
+        >
+          <svg
+            className="h-3.5 w-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 6h18" />
+            <path d="M8 6V4h8v2" />
+            <path d="m19 6-1 14H6L5 6" />
+            <path d="M10 11v5M14 11v5" />
           </svg>
         </button>
       </div>
