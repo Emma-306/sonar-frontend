@@ -1078,7 +1078,7 @@ const Reading = () => {
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[#F5F5F5] dark:bg-[#111113] lg:h-screen">
       {/* THEME TOGGLE */}
-      <div className="absolute right-4 top-3 z-50 sm:right-6 sm:top-5 md:right-8">
+      <div className="absolute right-4 top-3 z-50 sm:right-6 md:right-8">
         <ThemeToggle />
       </div>
 
