@@ -1078,7 +1078,7 @@ const Reading = () => {
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[#F5F5F5] dark:bg-[#111113] lg:h-screen">
       {/* THEME TOGGLE */}
-      <div className="absolute right-4 top-2 z-50 sm:right-6 sm:top-5 md:right-8">
+      <div className="absolute right-4 top-3 z-50 sm:right-6 sm:top-5 md:right-8">
         <ThemeToggle />
       </div>
 
@@ -1096,7 +1096,7 @@ const Reading = () => {
       />
 
       {/* MAIN */}
-      <main className="flex min-h-0 w-full flex-1 justify-center overflow-y-auto px-3 py-[65px] sm:px-5 md:px-6 lg:overflow-hidden lg:px-8 lg:py-[55px] xl:px-10">
+      <main className="flex min-h-0 w-full flex-1 justify-center overflow-y-auto px-3 pb-6 pt-[88px] sm:px-5 sm:pb-7 sm:pt-[96px] md:px-6 lg:overflow-hidden lg:px-8 lg:py-[55px] xl:px-10">
         <div className="flex min-h-0 w-full max-w-[1250px] flex-1 flex-col gap-4 sm:gap-5 md:gap-6 lg:flex-row lg:gap-7">
           {/* LEFT SIDE: DOCUMENT + FIXED PLAYER */}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 sm:gap-4">
