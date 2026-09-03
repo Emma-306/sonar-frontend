@@ -7,15 +7,11 @@ const ThemeToggle = () => {
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={
-        darkMode
-          ? "Switch to light mode"
-          : "Switch to dark mode"
-      }
+      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
       className="
         flex
-        h-11
-        w-11
+        h-9
+        w-9
         items-center
         justify-center
         rounded-full
@@ -40,7 +36,7 @@ const ThemeToggle = () => {
       {darkMode ? (
         /* SUN */
         <svg
-          className="h-5 w-5"
+          className="h-4 w-4"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -59,7 +55,7 @@ const ThemeToggle = () => {
       ) : (
         /* MOON */
         <svg
-          className="h-5 w-5"
+          className="h-4 w-4"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
