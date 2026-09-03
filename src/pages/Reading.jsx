@@ -1116,13 +1116,10 @@ const Reading = () => {
 
             {/* BOTTOM PLAYER — UNDER DOCUMENT ONLY */}
             <div className="w-full shrink-0 lg:hidden">
-              <div
-                className="flex min-h-[58px] items-center gap-3 rounded-[13px] bg-[#252528] px-3 py-2.5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] sm:min-h-[65px] sm:gap-4 sm:px-4 md:h-[72px] md:px-5"
-                style={{ boxShadow: `0 8px 25px ${activeHighlightColor}44` }}
-              >
+              <div className="flex min-h-[92px] flex-wrap items-center gap-x-2 gap-y-2 rounded-[13px] bg-[#252528] px-3 py-2.5 text-white sm:min-h-[100px] sm:gap-3 sm:px-4 md:min-h-[105px] md:px-5">
                 {/* FILE ICON */}
                 <div
-                  className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[9px] sm:h-[40px] sm:w-[40px]"
+                  className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[8px] sm:h-[40px] sm:w-[40px]"
                   style={{
                     backgroundColor: activeHighlightColor,
                   }}
@@ -1143,7 +1140,7 @@ const Reading = () => {
                 </div>
 
                 {/* FILE INFO */}
-                <div className="min-w-0 w-[100px] shrink-0 sm:w-[140px] md:w-[170px]">
+                <div className="min-w-0 flex-1 basis-[72px]">
                   <p className="truncate text-[10px] font-medium sm:text-[11px] md:text-[12px]">
                     {file?.originalName || "Document.pdf"}
                   </p>
@@ -1154,7 +1151,7 @@ const Reading = () => {
                 </div>
 
                 {/* BOTTOM PROGRESS */}
-                <div className="mx-1 min-w-0 flex-1 md:mx-3">
+                <div className="order-last basis-full px-0.5 md:mx-3">
                   <div className="relative h-[3px] w-full rounded-full bg-white/10">
                     <div
                       className="absolute left-0 top-0 h-full rounded-full"
@@ -1178,7 +1175,7 @@ const Reading = () => {
                 </div>
 
                 {/* RIGHT INFO */}
-                <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 md:gap-4">
+                <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-2 md:gap-4">
                   <span className="hidden max-w-[100px] truncate text-[9px] text-[#B4B4B8] sm:block md:max-w-[130px] md:text-[10px]">
                     {getVoiceDisplayName()}
                   </span>
@@ -1192,7 +1189,7 @@ const Reading = () => {
                     onClick={skipBackward}
                     disabled={!audioUrl}
                     aria-label="Skip backward 10 seconds"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                    className="flex h-7 w-6 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
                   >
                     <svg
                       width="15"
@@ -1223,7 +1220,7 @@ const Reading = () => {
                     onClick={skipForward}
                     disabled={!audioUrl}
                     aria-label="Skip forward 10 seconds"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                    className="flex h-7 w-6 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
                   >
                     <svg
                       width="15"
@@ -1255,7 +1252,8 @@ const Reading = () => {
                     onClick={togglePlay}
                     disabled={!audioUrl || isGeneratingAudio}
                     aria-label={isPlaying ? "Pause" : "Play"}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                    style={{ backgroundColor: activeHighlightColor }}
                   >
                     {isPlaying ? (
                       <svg
@@ -1284,7 +1282,7 @@ const Reading = () => {
                     onClick={restartAudio}
                     disabled={!audioUrl}
                     aria-label="Restart audio"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                    className="flex h-7 w-6 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
                   >
                     <svg
                       width="15"
@@ -1313,7 +1311,7 @@ const Reading = () => {
                     }
                     aria-label="Download audio"
                     title="Download audio"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                    className="flex h-7 w-6 shrink-0 items-center justify-center text-[#9B9BA1] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
                   >
                     {isDownloading ? (
                       <div
